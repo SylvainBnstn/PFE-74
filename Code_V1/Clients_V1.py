@@ -35,13 +35,20 @@ class list_naiv_clients:
     
     def __str__(self):
         return str(self.clients_list)
-
     
-a=Naiv_client(10,15,0.2)
-a2=Naiv_client(12,15,0.7)
-list2=[a,a2]
-print(list2)
-list1=list_naiv_clients(10,20,10)
-print(list1)
+    def del_client(self, list_i):
+        for index in sorted(list_i, reverse=True):
+            del self.clients_list[index]
+            
+        
+
+
+def test():    
+    a=Naiv_client(10,15,0.2)
+    a2=Naiv_client(12,15,0.7)
+    list2=[a,a2]
+    print(list2)
+    list1=list_naiv_clients(10,20,10)
+    print(list1)
 
 
