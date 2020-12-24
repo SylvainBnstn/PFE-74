@@ -19,8 +19,8 @@ class Market:
     def __init__(self,clients):
         self.clients = clients
         
-        data=[0,0,0,0,0,0,0]
-        self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
+        data=[0,0,0,0,0,0,0,0]
+        self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
         self.df_naiv_sales.loc[0]=data
 
         
@@ -38,37 +38,37 @@ class Market:
             if (price >= self.clients.clients_list[i].prix_min and price <= self.clients.clients_list[i].prix_max):
                 
                 #on montre que l'achat est envisagé
-                temp_str =str("Achat envisagé -> ")
+                #temp_str =str("Achat envisagé -> ")
                 temp_envi+=1
                 proba_temp = rd.random()
                 
                 #a revoir pour mise en place de WTP exacte
                 if proba_temp <= self.clients.clients_list[i].will_to_pay :
                     
-                    temp_str+=str("Achat Réalisé")
+                    #temp_str+=str("Achat Réalisé")
                     temp_real+=1
                     #l'acheteur quitte le marché
                     list_sales.append(i)
                 
                 else:
-                    temp_str+=str("Achat Abandonnée")
+                    #temp_str+=str("Achat Abandonnée")
                     temp_aban+=1
                 
-                print(temp_str)
+                #print(temp_str)
             
             #cas ou cest moins chère que le prix min
             elif (price <= self.clients.clients_list[i].prix_min):
-                print("Instant achat")
+                #print("Instant achat")
                 temp_inst+=1
                 list_sales.append(i)
             
             #sinon
             else:
-                print("Achat repoussé")
+                #print("Achat repoussé")
                 temp_repou+=1
         
         nb_row=self.df_naiv_sales.shape[0]
-        data_temp=[nb_row,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_inst+temp_real]
+        data_temp=[nb_row,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_inst+temp_real]
         self.df_naiv_sales.loc[nb_row]=data_temp
         return list_sales    
         
@@ -76,7 +76,7 @@ class Market:
 
 def test():
     #définit une list de clients naif avec prix min, prix max et nb clients
-    naiv_clients= cnt.list_naiv_clients(10,20,10)
+    naiv_clients= cnt.list_naiv_clients(10,20,100)
     
     #on créé le marché
     market=Market(naiv_clients)
@@ -84,7 +84,10 @@ def test():
     #première vérification
     list_del=market.check_sales(14,naiv_clients)
     naiv_clients.del_client(list_del)
+    
     print(market.df_naiv_sales)
+    
+    print(len(naiv_clients.clients_list))
 
         
 
