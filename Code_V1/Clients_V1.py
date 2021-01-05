@@ -26,6 +26,7 @@ class Naiv_client:
 class list_naiv_clients:
     
     def __init__(self,prix_min,prix_max,nb_client):
+        self.nb_client=nb_client
         self.clients_list=[]
         for _ in range(nb_client):
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
@@ -39,6 +40,18 @@ class list_naiv_clients:
     def del_client(self, list_i):
         for index in sorted(list_i, reverse=True):
             del self.clients_list[index]
+            
+    def update_client(self,prix_min,prix_max, list_i):
+        self.del_client(list_i)
+        temp_size=self.nb_client-len(self.clients_list)
+        for _ in range(temp_size):
+            temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
+            temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
+            temp_wtp = random.random()
+            self.clients_list.append(Naiv_client(temp_min,temp_max,temp_wtp))
+        print(temp_size," clients sont entré dans le marché")
+        
+        
             
         
 

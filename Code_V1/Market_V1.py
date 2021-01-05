@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Tue Dec  8 13:29:46 2020
 
@@ -82,12 +82,13 @@ def test():
     market=Market(naiv_clients)
     
     #première vérification
-    list_del=market.check_sales(14,naiv_clients)
-    naiv_clients.del_client(list_del)
+    for k in range(10):
+        list_del=market.check_sales(14+(k/5),naiv_clients)
+        naiv_clients.update_client(10, 20, list_del)
     
     print(market.df_naiv_sales)
     
-    print(len(naiv_clients.clients_list))
+
 
         
 
