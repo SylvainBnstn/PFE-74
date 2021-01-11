@@ -26,7 +26,6 @@ class Naiv_client:
 class list_naiv_clients:
     
     def __init__(self,prix_min,prix_max,nb_client):
-        self.nb_client=nb_client
         self.clients_list=[]
         for _ in range(nb_client):
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
@@ -41,19 +40,54 @@ class list_naiv_clients:
         for index in sorted(list_i, reverse=True):
             del self.clients_list[index]
             
-    def update_client(self,prix_min,prix_max, list_i):
-        self.del_client(list_i)
-        temp_size=self.nb_client-len(self.clients_list)
-        for _ in range(temp_size):
+
+class Smart_client:
+    
+    def __init__(self, prix_min,prix_max,will_to_pay):
+        self.prix_max=prix_max
+        self.prix_min=prix_min
+        self.will_to_pay=will_to_pay
+
+    def __str__(self):
+        r="Minimum Purchase Price: " + str(self.prix_min)+"\n"
+        r+="Maximum Purchase Price: " + str(self.prix_max)+"\n"
+        r+="Willing To Pay: " + str(self.will_to_pay)+"\n"
+        return r
+    
+    def __repr__(self):
+        r=(self.prix_min,self.prix_max,self.will_to_pay)
+        return str(r)
+    
+class list_smart_clients:
+    
+    '''
+        Smart Clients are defined by:
+            - a well-thought minimum and maximum purchase price
+            - a willing to pay price which depends on:
+                - client's income
+                - period of the year impacting the market (e.g. week-ends or holidays for plane tickets)
+                - 
+        
+        Disposable Information:
+            - Price
+            - Availability
+            - Number of available type of rent (whole property, part, shared...)
+    '''
+
+    def __init__(self,prix_min,prix_max,nb_client):
+        self.clients_list=[]
+        for _ in range(nb_client):
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
             temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
-            temp_wtp = random.random()
+            temp_wtp = random.random() # Willing To Pay
             self.clients_list.append(Naiv_client(temp_min,temp_max,temp_wtp))
-        print(temp_size," clients sont entré dans le marché")
-        
-        
-            
-        
+    
+    def __str__(self):
+        return str(self.clients_list)
+    
+    def del_client(self, list_i):
+        for index in sorted(list_i, reverse=True):
+            del self.clients_list[index]
 
 
 def test():    
@@ -63,5 +97,3 @@ def test():
     print(list2)
     list1=list_naiv_clients(10,20,10)
     print(list1)
-
-
