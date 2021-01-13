@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-"""
 
 import pandas as pd
 from math import nan
-
 
 def get_url_list(path):
     url_file=open("urls.txt","r")
@@ -29,6 +27,7 @@ def get_data(url_list,expected_path, list_city):
     frame = []
     # liste regroupant les noms de colonnes a recuperer
     column_names = [ "id","property_type", "room_type", "accommodates", "bedrooms", "beds", "price","availability_30", "number_of_reviews","review_scores_rating",	"review_scores_accuracy" ]
+
     missed_col =  ['square_feet','cleaning_fee']
     
     url_list = isolate_expected_urls(url_list, list_city)
@@ -72,6 +71,7 @@ def get_data(url_list,expected_path, list_city):
     result["cleaning_fee"].fillna("$0.00", inplace = True)
     result["cleaning_fee"] = result["cleaning_fee"].str.replace("$","")
     result["cleaning_fee"] = result["cleaning_fee"].str.replace(",","").astype(float)
+
     
     #Ajout de deux autres colonnes
     result["revenue_30"] = result["price"] *(30-result["availability_30"])
