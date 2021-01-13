@@ -9,6 +9,7 @@ Created on Thu Jan  7 15:28:54 2021
 import airbnb_processing as ap
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
     
 #fonction de multiplot par type de chambre
 def multiplot_by_roomtype(df,y_data_name,y_label):
@@ -37,6 +38,22 @@ def plot_by_squarefeet(df):
     plt.legend()
     plt.grid()
     plt.show()
+    
+def get_trend_on_scatter(df,y_data_name,y_label):
+    sqf_price = df.loc[(df["square_feet"].isna() == False) & (df["square_feet"] > 10) & (df["price"] > 0)]
+    plt.figure(figsize=(20, 10))
+    plt.scatter(x='square_feet',y='price' ,data = sqf_price)
+    
+    z = np.polyfit(sqf_price["square_feet"], sqf_price["price"], 1)
+    p = np.poly1d(z)
+    plt.plot(sqf_price["square_feet"],p(sqf_price["square_feet"]),"r--")
+    
+    plt.ylim((0,1500))
+    plt.xlim((0,3000))
+    plt.legend()
+    plt.grid()
+    plt.show()
+
 
 #fonction d'ajustement des données
 def review_data(df_all,city):
@@ -52,13 +69,15 @@ def review_data(df_all,city):
     df_result["date"]=pd.to_datetime(df_result["date"])
     return df_result
 
-df_start=ap.load_data("airbnb_data.csv")
-df_final=review_data(df_start,"new-york-city")
-print(df_start.columns)
-
-multiplot_by_roomtype(df_final,"mean_price","Prix Moyen")
-multiplot_by_roomtype(df_final,"mean_availability_30","Dispo Moyen")
-multiplot_by_roomtype(df_final,"number_of_hosts","Nombre de dispo")
-
-plot_by_squarefeet(df_start.loc[df_start["city"]=="new-york-city"])
-print(df_start.loc[df_start["city"]=="new-york-city"].head())
+def test():
+    df_start=ap.load_data("airbnb_data.csv")
+    df_final=review_data(df_start,"new-york-city")
+    print(df_start.columns)
+    
+    multiplot_by_roomtype(df_final,"mean_price","Prix Moyen")
+    multiplot_by_roomtype(df_final,"mean_availability_30","Dispo Moyen")
+    multiplot_by_roomtype(df_final,"number_of_hosts","Nombre de dispo")
+    
+    plot_by_squarefeet(df_start.loc[df_start["city"]=="new-york-city"])
+    get_trend_on_scatter(df_start.loc[df_start["city"]=="new-york-city"],"a","a")
+    print(df_start.loc[df_start["city"]=="new-york-city"].head())

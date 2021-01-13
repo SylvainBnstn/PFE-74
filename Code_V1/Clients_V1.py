@@ -5,6 +5,8 @@ Created on Tue Dec  8 13:30:18 2020
 @author: Sylvain
 """
 import random
+import data_analysis as da
+import airbnb_processing as ap
 
 class Naiv_client:
     
@@ -90,10 +92,30 @@ class list_smart_clients:
             del self.clients_list[index]
 
 
+
+
 def test():    
-    a=Naiv_client(10,15,0.2)
-    a2=Naiv_client(12,15,0.7)
-    list2=[a,a2]
-    print(list2)
-    list1=list_naiv_clients(10,20,10)
-    print(list1)
+    # a=Naiv_client(10,15,0.2)
+    # a2=Naiv_client(12,15,0.7)
+    # list2=[a,a2]
+    # print(list2)
+    # list1=list_naiv_clients(10,20,10)
+    # print(list1)
+    
+    df_start=ap.load_data("airbnb_data.csv")
+    df_start=df_start.loc[(df_start["room_type"]=="Entire home/apt") & (df_start["price"]>=100) & (df_start["price"]<=200)]
+    df_final=da.review_data(df_start,"new-york-city")
+
+    df_final=df_final.reset_index(drop=True)
+    df_final=df_final.loc[df_final.shape[0]-12:df_final.shape[0]-1]
+    
+    for k in range(df_final.shape[0]):    
+        avail_rate=df_final.loc[df_final.index[k],"mean_availability_30"] / 30 *100
+        print("B",avail_rate)
+        final_rate=avail_rate+0.05
+        print("B",avail_rate)
+        
+    print(df_final)
+    
+# test()
+    
