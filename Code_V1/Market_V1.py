@@ -8,6 +8,7 @@ Created on Tue Dec  8 13:29:46 2020
 import Naiv_Clients_v2 as cnt
 import data_analysis as da
 import airbnb_processing as ap
+import Test_Class as tst
 
 
 import random as rd
@@ -29,52 +30,14 @@ class Market:
 
         
     #fonction d'execution des ventes
-    def check_sales(self, price, clients):
+    def check_sales(self, price, clients, list_resa):
         
-        temp_envi = temp_real = temp_aban = temp_inst = temp_repou = 0
-        
-        #list des index des acheteurs ayant conclu un acht
-        list_sales=[]
-        
-        for i in range(len(self.clients.clients_list)):
-            
-            #cas ou le prix est compris dans la cible
-            if (price >= self.clients.clients_list[i].prix_min and price <= self.clients.clients_list[i].prix_max):
-                
-                #on montre que l'achat est envisagé
-                #temp_str =str("Achat envisagé -> ")
-                temp_envi+=1
-                proba_temp = rd.random()
-                
-                #a revoir pour mise en place de WTP exacte
-                if proba_temp <= self.clients.clients_list[i].will_to_pay :
-                    
-                    #temp_str+=str("Achat Réalisé")
-                    temp_real+=1
-                    #l'acheteur quitte le marché
-                    list_sales.append(i)
-                
-                else:
-                    #temp_str+=str("Achat Abandonnée")
-                    temp_aban+=1
-                
-                #print(temp_str)
-            
-            #cas ou cest moins chère que le prix min
-            elif (price <= self.clients.clients_list[i].prix_min):
-                #print("Instant achat")
-                temp_inst+=1
-                list_sales.append(i)
-            
-            #sinon
-            else:
-                #print("Achat repoussé")
-                temp_repou+=1
+        list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa = clients.check_sales_naiv(price, list_resa)
         
         nb_row=self.df_naiv_sales.shape[0]
         data_temp=[nb_row,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_inst+temp_real]
         self.df_naiv_sales.loc[nb_row]=data_temp
-        return list_sales    
+        return list_sales, list_resa
         
 
 
@@ -90,22 +53,54 @@ def test():
     df_final=df_final.loc[df_final.shape[0]-12:df_final.shape[0]-1]
     
     #définit une list de clients naif avec prix min, prix max et nb clients
-    naiv_clients= cnt.list_naiv_clients(10,20,100,0.85,0.15)
+    naiv_clients= cnt.list_naiv_clients(100,200,30,0.85,0.15)
+    
+    #on init le DQN
+    dqn=tst.DQN()
     
     #on créé le marché
     market=Market(naiv_clients)
     
+    #TEEEEEEEEST
+    
+    ########
+    state = dqn.env_initial_test_state(150)#init price 
+    reward_trace = []
+    p_trace = [state[0]]
+    #############
+    
+    
+    list_resa = [0]* df_final.shape[0]
+    list_resa_final = []    
+    
     for k in range(df_final.shape[0]):    
+        
+        #arrivée d'un unique prix 
+        
+        ########## Remplacer par un aleat compris entre 50 et 250
+        reward,p, state= dqn.dqn_test(state)
+        reward_trace.append(reward)
+        p_trace.append(p)
+        
+        #########
+        
+        print(p)
+        
         avail_rate=df_final.loc[df_final.index[k],"mean_availability_30"] / 30 
-        print("B",avail_rate)
         final_rate=avail_rate+0.05
-        print("B",avail_rate)
-        list_del=market.check_sales(14+(k/5),naiv_clients)
-        naiv_clients.update_client(10, 20, list_del,0.85,final_rate)
+        
+        list_del, list_resa = market.check_sales(p,naiv_clients,list_resa)
+        naiv_clients.update_client(100, 200, list_del,0.85,final_rate,k)
+        
+        print (list_resa)
+        
+        list_resa_final.append(list_resa[0])
+        del list_resa[0]
+        
+        #retour de la demande 
         
     print(df_final)
-
-    
+    print(list_resa_final)    
     print(market.df_naiv_sales)
     
 

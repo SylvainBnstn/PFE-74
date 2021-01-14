@@ -1,32 +1,38 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import numpy as np
+ 
 ###############################################################################
 # Get data from file
+def get_data(file_name = "airbnb_data.csv", train_proportion=0.9):
+    share_data = pd.read_csv(file_name) 
+    data = share_data[["date", "price", "booked", "room_type"]]
 
-
-def get_data(filename='data/airbnb_data2.csv',train_proportion=0.9):
-    
-    share_data=pd.read_csv(filename,sep=";")
-    data = share_data[["date","price", "booked","room_type"]]
-    data2= data['room_type']=='Entire home/apt'
-    data3= data[data2]
-    data=data3[ (data3["price"] >=100) & (data3["price"] <=200)]
-    data = data[:1000]
-    ###############################################################################
-    # split data for training & test
+    data_mask = data["room_type"] == "Entire home/apt"
+    data = data[data_mask]
+    data = data[:3000]
+ 
+###############################################################################
+# separe data for train & test
     data_train = data[:int(train_proportion*len(data))]
     data_test = data[int(train_proportion*len(data)):]
-    
-    #range of price
-    a = sorted(set(data_train["price"]))
-    Price_range = list(a)
 
-    return Price_range,data_train,data_test
+    #data_train=data_train[ (data_train["price"] >=100) & (data_train["price"] <=200)]
+
+    #range of price
+    a = data_train["price"]
+    """
+    b=[]
+    for i in range(len(a)):
+        b.append([(a.iloc[i,0],a.iloc[i,1])])
+    """
+    Price_range = np.array(a)
+    #Price_range = b
+    #Price_range = Price_range.tolist()
+
+    return Price_range, data_train, data_test
 
 get_data()
-
-
 
 
 

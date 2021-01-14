@@ -90,7 +90,7 @@ def env_initial_state():
     state = np.repeat(0,2*state_dim)
     return state
 
-def env_step(t, state, action):
+def env_step( state, action):
     next_state = np.repeat(0,2*state_dim)
     next_state[0] = price_grid[action]
     next_state[1:state_dim] = state[0:state_dim-1]
@@ -130,7 +130,7 @@ def training():
               q_values = policy_net(to_tensor(state))
             action = policy.select_action(q_values.detach().numpy())
     
-            next_state, reward = env_step(t, state, action)
+            next_state, reward = env_step(state, action)
     
             # Store the transition in memory
             memory.push(to_tensor(state), 

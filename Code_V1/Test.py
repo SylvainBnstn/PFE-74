@@ -19,37 +19,40 @@ profit_response = Model_DQN_update.profit_response
 policy = EpsilonGreedyPolicy()
 state_dim = Model_DQN_update.state_dim
 
-
+#crochet 2 pour isoler 3 colonne convertit en array
 data_test = testwithdata.get_data()[2].to_numpy()
 T = 100
 
 def env_initial_test_state(data):
     state = np.repeat(0,2*state_dim)
-    state[0]= data[0,1]
+    state[0]= data
     return state
 ###############################################################################
 # Test
 
-def dqn_test():
+def dqn_test(initial_state):
     
-    state_test = env_initial_test_state(data_test)
-    reward_trace_test = []
-    p_test = [state_test[0]]
-    for t in range(T):
-        # Select and perform an action
-        q_values_test = target_net(to_tensor(state_test))
-        action_test = policy.select_action(q_values_test.detach().numpy())
+    state_test = initial_state
+    #reward_trace_test = []
+    #p_test = [state_test[0]]
+    #for t in range(T):
     
-        next_state_test, reward_test = env_step(t, state_test, action_test)
-    
-        # Move to the next state
-        state_test = next_state_test
-    
-        reward_trace_test.append(reward_test)
-        p_test.append(price_grid[action_test])
-        
-    
-    return reward_trace_test,p_test
+    # Select and perform an action
+    q_values_test = target_net(to_tensor(state_test))
+    action_test = policy.select_action(q_values_test.detach().numpy())
+
+ 
+
+    next_state_test, reward_test = env_step(state_test, action_test)
+
+ 
+
+    # Move to the next state
+    state_test = next_state_test
+
+ 
+
+    return reward_test,price_grid[action_test],state_test
 
 def cumul_reward(reward_trace_test,p_test):
 ####################################################
