@@ -4,8 +4,11 @@ Created on Tue Dec  8 13:30:18 2020
 
 @author: Sylvain
 """
-import random as rnd
 
+
+import random as rnd
+import data_analysis as da
+import airbnb_processing as ap
 
 class Naiv_client:
 
@@ -13,6 +16,7 @@ class Naiv_client:
         self.prix_max = prix_max
         self.prix_min = prix_min
         self.will_to_pay = will_to_pay
+        self.echeance = echeance
 
     def __str__(self):
         r = "Prix achat min: " + str(self.prix_min) + "\n"
@@ -24,19 +28,26 @@ class Naiv_client:
         r = (self.prix_min, self.prix_max, self.will_to_pay)
         return str(r)
 
-
 class list_naiv_clients:
 
-    def __init__(self, prix_min, prix_max, nb_client):
-        self.clients_list = []
-        for _ in range(nb_client):
-            temp_min = rnd.uniform(
-                prix_min, prix_min + (prix_max - prix_min) / 2)
-            temp_max = rnd.uniform(
-                prix_min + (prix_max - prix_min) / 2, prix_max)
-            temp_wtp = rnd.random()
-            self.clients_list.append(Naiv_client(temp_min, temp_max, temp_wtp))
-
+    def __init__(self,prix_min,prix_max,nb_client,wtp,rate_to_assure):
+        self.nb_client = nb_client
+        self.clients_list=[]
+        aleat = int((1-rate_to_assure)*nb_client)
+        print (aleat)
+        for _ in range(aleat):
+            temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
+            temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
+            temp_wtp = random.random()
+            temp_ech = random.randint(0,11)
+            self.clients_list.append(Naiv_client(temp_min,temp_max,temp_wtp,temp_ech))
+            
+        for _ in range(nb_client-aleat):
+            temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
+            temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
+            temp_ech = random.randint(0,11)
+            self.clients_list.append(Naiv_client(temp_min,temp_max,wtp,temp_ech))
+    
     def __str__(self):
         return str(self.clients_list)
 
@@ -52,7 +63,6 @@ class list_naiv_clients:
 
     # fonction d'execution des ventes
     def check_sales(self, price, clients):
-
         buy_considered = buy_done = buy_dropped = instant_buy = buy_postponed = 0
 
         # list des index des acheteurs ayant conclu un acht
@@ -60,52 +70,95 @@ class list_naiv_clients:
 
         for current_client in range(len(self.clients.clients_list)):
 
-            # cas ou le prix est compris dans la cible
-            if (price >= self.clients.clients_list[current_client].prix_min and price <=
-                    self.clients.clients_list[current_client].prix_max):
+            # print(i,",",self.clients_list[i].echeance)
 
-                # on montre que l'achat est envisagé
-                #temp_str =str("Achat envisagé -> ")
-                buy_considered += 1
-                rnd_willingness = rnd.random()
+            #cas normal ou l'écheance est différ
+            if self.clients_list[current_client].echeance >= 1  and list_resa[self.clients_list[current_client].echeance-1] < 30 :
 
-                # a revoir pour mise en place de WTP exacte
-                if rnd_willingness <= self.clients.clients_list[current_client].will_to_pay:
-                    #temp_str+=str("Achat Réalisé")
-                    buy_done += 1
-                    # l'acheteur quitte le marché
+                # cas ou le prix est compris dans la cible
+                if (price >= self.clients_list[current_client].prix_min and price <= self.clients_list[current_client].prix_max):
+
+                    # on montre que l'achat est envisagé
+                    #temp_str =str("Achat envisagé -> ")
+                    buy_considered += 1
+                    rnd_willingness = rnd.random()
+
+                    # a revoir pour mise en place de WTP exacte
+                    if rnd_willingness <= self.clients_list[current_client].will_to_pay:
+                        
+                        #temp_str+=str("Achat Réalisé")
+                        buy_done += 1
+                        # l'acheteur quitte le marché
+                        list_sales.append(current_client)
+
+                        list_resa[self.clients_list[current_client].echeance-1] += 1
+
+                    else:
+                        #temp_str+=str("Achat Abandonné")
+                        buy_dropped += 1
+
+                    # print(temp_str)
+
+                # Lower price than minimum
+                elif (price <= self.clients_list[current_client].prix_min):
+                    #print("Instant achat")
+                    instant_buy += 1
                     list_sales.append(current_client)
 
+                    list_resa[self.clients_list[current_client].echeance-1] += 1
+
+                # Higher price than maximum
                 else:
-                    #temp_str+=str("Achat Abandonné")
-                    buy_dropped += 1
+                    #print("Achat repoussé")
+                    buy_postponed += 1
 
-                # print(temp_str)
+            #cas ou il reste de la place pour le mois qui vient
+            if self.clients_list[current_client].echeance == 0 :
+                
+                if list_resa[self.clients_list[current_client].echeance-1] < 30 :
+                    
+                    temp_real+=1
+                    #l'acheteur quitte le marché
+                    list_sales.append(current_client)
+                    list_resa[self.clients_list[current_client].echeance-1] += 1
+                else :
+                    #l'acheteur quitte le marché bredouille
+                    list_sales.append(current_client)
+                    
+            
+            self.clients_list[current_client].echeance -= 1
+        
+        return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa
 
-            # Lower price than minimum
-            elif (price <= self.clients.clients_list[current_client].prix_min):
-                #print("Instant achat")
-                instant_buy += 1
-                list_sales.append(current_client)
-
-            # Higher price than maximum
-            else:
-                #print("Achat repoussé")
-                buy_postponed += 1
-
-        nb_row = self.df_naiv_sales.shape[0]
-        data_temp = [
-            nb_row,
-            price,
-            buy_considered,
-            buy_done,
-            buy_dropped,
-            instant_buy,
-            buy_postponed,
-            instant_buy +
-            buy_done]
-        self.df_naiv_sales.loc[nb_row] = data_temp
-        return list_sales
+    def update_client(self,prix_min,prix_max,list_to_del,wtp,rate_to_assure,resting_time):
+        self.del_client(list_to_del)
+        
+        # print("CList avant",len(self.clients_list))
+        # print("DelList",len(list_to_del))
+        
+        #on assure un nombre "rate to assure" de wtp élevé
+        aleat = int((1-rate_to_assure)*(len(list_to_del)))
+        
+        # print ("Aleat",aleat)
+        
+        #on fait les WTP random
+        for _ in range(aleat):
+            temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
+            temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
+            temp_wtp = random.random()
+            temp_ech = random.randint(0,11-resting_time)
+            self.clients_list.append(Naiv_client(temp_min,temp_max,temp_wtp,temp_ech))
+            
+        # print("Chiffre sorti du Q",(len(list_to_del) -aleat))
+        
+        #les wtp forcés
+        for _ in range(len(list_to_del) -aleat):
+            temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
+            temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
+            temp_ech = random.randint(0,11-resting_time)
+            self.clients_list.append(Naiv_client(temp_min,temp_max,wtp,temp_ech))
+            
+        # print("CList après",len(self.clients_list))
 
 
 '''
@@ -223,6 +276,35 @@ class list_smart_clients:
         # l'échéance
         return wtp
 
+    # Fonction de détermination si le client stratégique achète ou pas en fonction des prix qu'il rencontre au fur et à mesure au moment présent sans connaissance des prix futurs
+    # Si le dernier prix est inférieur aux deux d'avant
+    def strategic_price(self, price_trace):
+        length = len(price_trace)
+        poids = 0
+        buy = False
+        # Applique l'achat si deux baisses consécutives de prix
+        for i in range(2):
+            if (price_trace[length-1]<price_trace[length-(i+1)-1]):
+                poids = poids + 1
+        if (poids >= 2):
+            if (price_trace[length-1]<=self.prix_max or price_trace[length-1]>=self.prix_min):
+                buy = True
+        return buy
+
+    #Deux baisses consécutives uniquement
+    def strategic_price_v2(self, price_trace):
+        length = len(price_trace)
+        poids = 0
+        buy = False
+        # Applique l'achat si deux baisses consécutives de prix
+        for i in range(2):
+            if (price_trace[length-i-1]<price_trace[length-(i+1)-1]):
+                poids = poids + 1
+        if (poids >= 2):
+            if (price_trace[length-1]<=self.prix_max or price_trace[length-1]>=self.prix_min):
+                buy = True
+        return buy
+
     def get_min_x_percent(self, df, x):
         return df['price'].head(int(x * df.size)).mean()
 
@@ -245,7 +327,7 @@ class list_smart_clients:
 
         # Sales verification and sold items deletion
 
-    def check_sales(self, price, clients, echeance):
+    def check_sales(self, price, clients, echeance, price_trace):
     
         buy_considered = buy_done = buy_dropped = instant_buy = buy_postponed = 0
 
@@ -283,11 +365,14 @@ class list_smart_clients:
 
                 # a revoir pour mise en place de WTP exacte
                 if (1-wtp) <= self.clients.clients_list[current_client].will_to_pay:
-
-                    #temp_str+=str("Achat Réalisé")
-                    buy_done += 1
-                    # l'acheteur quitte le marché
-                    list_sales.append(current_client)
+                    
+                    condition_prix = strategic_price(p_trace)
+                    #condition_prix = strategic_price_v2(p_trace)
+                    if( condition_prix == True):
+                        #temp_str+=str("Achat Réalisé")
+                        buy_done += 1
+                        # l'acheteur quitte le marché
+                        list_sales.append(current_client)
 
                 else:
                     #temp_str+=str("Achat Abandonné")

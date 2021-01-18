@@ -64,9 +64,9 @@ def test():
     #TEEEEEEEEST
     
     ########
-    state = dqn.env_initial_test_state(150)#init price 
-    reward_trace = []
-    p_trace = [state[0]]
+    #state = dqn.env_initial_test_state(150)#init price 
+    #reward_trace = []
+    #p_trace = [state[0]]
     #############
     
     
@@ -78,8 +78,9 @@ def test():
         #arrivée d'un unique prix 
         
         ########## Remplacer par un aleat compris entre 50 et 250
-        reward,p, state= dqn.dqn_test(state)
-        reward_trace.append(reward)
+        #reward,p, state= dqn.dqn_test(state)
+        #reward_trace.append(reward)
+        p = random.randint(50, 250)
         p_trace.append(p)
         
         #########
