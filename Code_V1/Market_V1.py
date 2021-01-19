@@ -62,9 +62,11 @@ def test():
     df_final=df_final.reset_index(drop=True)
     df_final=df_final.loc[df_final.shape[0]-12:df_final.shape[0]-1]
     
+    df_arnaud=ap.load_data("newyork2.csv")
+    
     #définit une list de clients naif avec prix min, prix max et nb clients
     naiv_clients= cnt.list_naiv_clients(100,200,30,0.85,0.15)
-    strat_clients = nsc.list_smart_clients (100,200,30)
+    strat_clients = nsc.list_smart_clients (100,200,30,df_arnaud)
     
     #on init le DQN
     dqn=tst.DQN()
@@ -102,8 +104,9 @@ def test():
         avail_rate=df_final.loc[df_final.index[k],"mean_availability_30"] / 30 
         final_rate=avail_rate+0.05
         
-        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,(df_final.shape[0])-k,p_trace)
+        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,df_final.shape[0]-1,p_trace)
         naiv_clients.update_client(100, 200, list_del_naiv,0.85,final_rate,k)
+        strat_clients.update_client(100, 200, list_del_strat,k)
         
         print (list_resa_naiv)
         print (list_resa_strat)
