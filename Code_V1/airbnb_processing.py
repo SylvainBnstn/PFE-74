@@ -85,6 +85,6 @@ def load_data(path):
     print("\n°°°°° Chargement reussi! °°°°°")
     return df
 
-# URLS=get_url_list("urls.txt")
-# get_data(URLS,"airbnb_data.csv",["new-york-city","amsterdam"])
-# load_data("airbnb_data.csv")
+URLS=get_url_list("urls.txt")
+get_data(URLS,"airbnb_data.csv",["new-york-city"])
+load_data("airbnb_data.csv")
