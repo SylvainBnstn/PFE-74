@@ -9,6 +9,7 @@ import Naiv_Clients_v2 as cnt
 import data_analysis as da
 import airbnb_processing as ap
 import Test_Class as tst
+import naiv_strategic_clients as nsc
 
 
 import random as rd
@@ -21,23 +22,32 @@ import pandas as pd
 
 class Market:
     
-    def __init__(self,clients):
-        self.clients = clients
+    def __init__(self):        
+        data=[0,0,0,0,0,0,0,0,0,0]
         
-        data=[0,0,0,0,0,0,0,0]
-        self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
+        self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Obli","Achat_Comp","Achat_Tot"])
         self.df_naiv_sales.loc[0]=data
+        
+        self.df_strat_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
+        self.df_strat_sales.loc[0]= [0]* (len(data)-2)
 
         
     #fonction d'execution des ventes
-    def check_sales(self, price, clients, list_resa):
+    def check_sales(self, price, naiv_clients, list_resa_naiv, strat_clients, list_resa_strat, echeance, price_trace):
         
-        list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa = clients.check_sales_naiv(price, list_resa)
+        list_del_naiv, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, temp_obli, temp_comp, list_resa_naiv = naiv_clients.check_sales(price, list_resa_naiv)
         
-        nb_row=self.df_naiv_sales.shape[0]
-        data_temp=[nb_row,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_inst+temp_real]
-        self.df_naiv_sales.loc[nb_row]=data_temp
-        return list_sales, list_resa
+        list_del_strat ,buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, list_resa_strat = strat_clients.check_sales(price, echeance, price_trace, list_resa_strat )
+        
+        nb_row_naiv=self.df_naiv_sales.shape[0]
+        data_temp_naiv=[nb_row_naiv,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_obli, temp_comp,temp_inst+temp_real+temp_obli]
+        self.df_naiv_sales.loc[nb_row_naiv]=data_temp_naiv
+        
+        nb_row_strat=self.df_strat_sales.shape[0]
+        data_temp_strat=[nb_row_strat, price, buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, instant_buy + buy_done]
+        self.df_strat_sales.loc[nb_row_strat]=data_temp_strat
+        
+        return list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat
         
 
 
@@ -54,12 +64,13 @@ def test():
     
     #définit une list de clients naif avec prix min, prix max et nb clients
     naiv_clients= cnt.list_naiv_clients(100,200,30,0.85,0.15)
+    strat_clients = nsc.list_smart_clients (100,200,30)
     
     #on init le DQN
     dqn=tst.DQN()
     
     #on créé le marché
-    market=Market(naiv_clients)
+    market=Market()
     
     #TEEEEEEEEST
     
@@ -70,8 +81,10 @@ def test():
     #############
     
     
-    list_resa = [0]* df_final.shape[0]
-    list_resa_final = []    
+    list_resa_naiv = [0]* df_final.shape[0]
+    list_resa_naiv_final = []
+    list_resa_strat = list_resa_naiv.copy()
+    list_resa_strat_final = []    
     
     for k in range(df_final.shape[0]):    
         
@@ -89,21 +102,25 @@ def test():
         avail_rate=df_final.loc[df_final.index[k],"mean_availability_30"] / 30 
         final_rate=avail_rate+0.05
         
-        list_del, list_resa = market.check_sales(p,naiv_clients,list_resa)
-        naiv_clients.update_client(100, 200, list_del,0.85,final_rate,k)
+        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,(df_final.shape[0])-k,p_trace)
+        naiv_clients.update_client(100, 200, list_del_naiv,0.85,final_rate,k)
         
-        print (list_resa)
+        print (list_resa_naiv)
+        print (list_resa_strat)
         
-        list_resa_final.append(list_resa[0])
-        del list_resa[0]
+        list_resa_naiv_final.append(list_resa_naiv[0])
+        list_resa_strat_final.append(list_resa_strat[0])
+        del list_resa_naiv[0]
+        del list_resa_strat[0]
         
         #retour de la demande 
         
     print(df_final)
-    print(list_resa_final)    
+    print(list_resa_naiv_final)    
     print(market.df_naiv_sales)
     
-
+    print(list_resa_strat_final)    
+    print(market.df_strat_sales)
 
         
 

@@ -4,7 +4,7 @@ import pandas as pd
 from math import nan
 
 def get_url_list(path):
-    url_file=open("urls.txt","r")
+    url_file=open(path,"r")
     lines = url_file.readlines()
     list_urls = []
     for line in lines:

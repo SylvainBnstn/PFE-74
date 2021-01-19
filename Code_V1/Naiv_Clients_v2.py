@@ -55,8 +55,8 @@ class list_naiv_clients:
         for index in sorted(list_i, reverse=True):
             del self.clients_list[index]
             
-    def check_sales_naiv(self,price, list_resa):
-        temp_envi = temp_real = temp_aban = temp_inst = temp_repou = 0
+    def check_sales(self,price, list_resa):
+        temp_envi = temp_real = temp_aban = temp_inst = temp_repou = temp_obli = temp_comp = 0
         
         #list des index des acheteurs ayant conclu un acht
         list_sales=[]
@@ -105,24 +105,30 @@ class list_naiv_clients:
                 else:
                     #print("Achat repoussé")
                     temp_repou+=1
+                    
+            #cas normal ou l'écheance est différ
+            if self.clients_list[i].echeance >= 1  and list_resa[self.clients_list[i].echeance-1] == 30 :
+                temp_comp+=1
+                
             
             #cas ou il reste de la place pour le mois qui vient
             if self.clients_list[i].echeance == 0 :
                 
                 if list_resa[self.clients_list[i].echeance-1] < 30 :
                     
-                    temp_real+=1
+                    temp_obli+=1
                     #l'acheteur quitte le marché
                     list_sales.append(i)
                     list_resa[self.clients_list[i].echeance-1] += 1
                 else :
+                    temp_comp+=1
                     #l'acheteur quitte le marché bredouille
                     list_sales.append(i)
                     
             
             self.clients_list[i].echeance -= 1
         
-        return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa
+        return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou,temp_obli, temp_comp, list_resa
             
     def update_client(self,prix_min,prix_max,list_to_del,wtp,rate_to_assure,resting_time):
         self.del_client(list_to_del)
