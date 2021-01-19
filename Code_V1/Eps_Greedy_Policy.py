@@ -24,3 +24,7 @@ class EpsilonGreedyPolicy:
         else:                           # exploration
             return random.randrange(len(q_values))
         
+    def select_action_test(self, q_values):
+        return np.argmax(q_values)
+    
+        

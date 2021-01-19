@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import testwithdata
 
 ###############################################################################
 # Environment simulator
@@ -28,6 +27,9 @@ def d_t(p_t, p_t_1, d_0, k, a, b):
 def profit_t(p_t, p_t_1, d_0, k, a, b, unit_cost):
   return d_t(p_t, p_t_1, d_0, k, a, b)*(p_t - unit_cost) 
 
+def profit_t_d(p_t, demand):
+    unit_cost = 10
+    return demand*(p_t - unit_cost) 
 # Total profit for price vector p over len(p) time steps
 # = profit at time t=0 + profit from time t=1 to len(p)
 def profit_total(p, unit_cost, d_0, k, a, b):
@@ -35,76 +37,77 @@ def profit_total(p, unit_cost, d_0, k, a, b):
 
 ###############################################################################
 # Environment parameters
-d_0 = 250 #according to average price in the market because : d_0 - k*(((pt)))
-k = 1
-unit_cost = 10
-a_q = 1
-b_q = 3
 
-
+"""
 #les 2 dim sont egales que lorsque les states cest juste le prix
-### [0] = to get the first return value of get_data
 price_grid = testwithdata.get_data()[0]
+#price_grid = price_grid.transpose()
 state_dim = len(price_grid)
 action_dim = len(price_grid)
-
+"""
 
 ###############################################################################
 # Partial bindings for readability
 def profit_t_response(p_t, p_t_1):
-  return profit_t(p_t, p_t_1, d_0, k, a_q, b_q, unit_cost)
+    d_0 = 250 #according to average price in the market because : d_0 - k*(((pt)))
+    k = 1
+    unit_cost = 10
+    a_q = 1
+    b_q = 3
+    return profit_t(p_t, p_t_1, d_0, k, a_q, b_q, unit_cost)
 
 def profit_response(p):
-  return profit_total(p, unit_cost, d_0, k, a_q, b_q)
+    d_0 = 250 #according to average price in the market because : d_0 - k*(((pt)))
+    k = 1
+    unit_cost = 10
+    a_q = 1
+    b_q = 3
+    return profit_total(p, unit_cost, d_0, k, a_q, b_q)
 
 
+"""
 T=12
 ###############################################################################
+# Find the optimal constante price
+def find_opti_cst_price():
+    profits = np.array([ profit_response(np.repeat(p, T)) for p in price_grid ])
+    p_idx = np.argmax(profits)
+    price_opt_const = price_grid[p_idx]
+    
+    print(f'Optimal price is {price_opt_const}, achieved profit is {profits[p_idx]}')
+    
+    plt.figure(figsize=(16,7))
+    plt.plot(price_grid, profits)
+    plt.xlabel("Price")
+    plt.ylabel("Profit")
+    plt.grid()
+    plt.show()
+    return price_opt_const
 
+price_opt_const = find_opti_cst_price()
 
+###############################################################################
+# Find optimal sequence of prices using greedy search
+def find_optimal_price_t(p_baseline, price_grid, t):   # evalutes all possible price schedules 
+  p_grid = np.tile(p_baseline, (len(price_grid), 1))   # derived from the baseline by  
+  p_grid[:, t] = price_grid                            # changing the price at time t
+  profit_grid = np.array([ profit_response(p) for p in p_grid ])
+  p_idx = np.argmax(profit_grid)
+  price_opt_dynamic = price_grid[p_idx]
+  return price_opt_dynamic
 
-#
-## Find the optimal constante price
-#def find_opti_cst_price():
-#    profits = np.array([ profit_response(np.repeat(p, T)) for p in price_grid ])
-#    p_idx = np.argmax(profits)
-#    price_opt_const = price_grid[p_idx]
-#    
-#    print(f'Optimal price is {price_opt_const}, achieved profit is {profits[p_idx]}')
-#    
-#    plt.figure(figsize=(16,7))
-#    plt.plot(price_grid, profits)
-#    plt.xlabel("Price")
-#    plt.ylabel("Profit")
-#    plt.grid()
-#    plt.show()
-#    return price_opt_const
-#
-#price_opt_const = find_opti_cst_price()
-#
-################################################################################
-## Find optimal sequence of prices using greedy search
-#def find_optimal_price_t(p_baseline, price_grid, t):   # evalutes all possible price schedules 
-#  p_grid = np.tile(p_baseline, (len(price_grid), 1))   # derived from the baseline by  
-#  p_grid[:, t] = price_grid                            # changing the price at time t
-#  profit_grid = np.array([ profit_response(p) for p in p_grid ])
-#  p_idx = np.argmax(profit_grid)
-#  price_opt_dynamic = price_grid[p_idx]
-#  return price_opt_dynamic
-#
-#p_opt = np.repeat(price_opt_const, T)                  # start with the constant price schedule
-#for t in range(T):                                     # and optimize one price at a time
-#  price_t = find_optimal_price_t(p_opt, price_grid, t)
-#  p_opt[t] = price_t
-#
-#
-#print(p_opt)
-#print(f'Achieved profit is {profit_response(p_opt)}')
-#plt.figure(figsize=(16,7))
-#plt.plot(range(T), p_opt, c='red')
-#plt.xlabel("Time")
-#plt.ylabel("Price")
-#plt.grid()
-#plt.show()
-#
-#
+p_opt = np.repeat(price_opt_const, T)                  # start with the constant price schedule
+for t in range(T):                                     # and optimize one price at a time
+  price_t = find_optimal_price_t(p_opt, price_grid, t)
+  p_opt[t] = price_t
+
+print(p_opt)
+print(f'Achieved profit is {profit_response(p_opt)}')
+plt.figure(figsize=(16,7))
+plt.plot(range(T), p_opt, c='red')
+plt.xlabel("Time")
+plt.ylabel("Price")
+plt.grid()
+plt.show()
+"""
+

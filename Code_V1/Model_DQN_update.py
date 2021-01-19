@@ -11,7 +11,8 @@ import torch.optim as optim
 from DQN_V2 import DeepQNetwork
 from Replay_memory import ReplayMemory
 from Eps_Greedy_Policy import EpsilonGreedyPolicy
-import Environment 
+import Import_data
+import Environment
 
 # Visualization functions
 def plot_return_trace(returns, smoothing_window=10, range_std=2):
@@ -37,22 +38,23 @@ def plot_price_schedules(p_trace, sampling_ratio, last_highlights,T, fig_number=
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
-GAMMA = 0.9
-TARGET_UPDATE = 20
-BATCH_SIZE = 512
 
-import testwithdata
 
-data_train = testwithdata.get_data()[1].to_numpy()
+
+
+data_train = Import_data.get_data()[1].to_numpy()
 #T = len(data_train)
 T = 12 # 12mois
 
-price_grid = Environment.price_grid
-profit_t_response = Environment.profit_t_response
-profit_response = Environment.profit_response
-state_dim = Environment.state_dim
+price_grid = Import_data.get_data()[0]
+profit_t_d = Environment.profit_t_d
+state_dim = len(price_grid)
 
 def update_model(memory, policy_net, target_net):
+    optimizer = optim.Adam(policy_net.parameters(), lr = 0.005)
+    GAMMA = 0.9
+    
+    BATCH_SIZE = 512
     if BATCH_SIZE < len(memory):
             
         transitions = memory.sample(BATCH_SIZE)
@@ -67,10 +69,10 @@ def update_model(memory, policy_net, target_net):
         reward_batch = torch.stack(batch.reward)
     
         #q-value
-        state_action_values = policy_net(state_batch).gather(1, action_batch)
+        state_action_values = policy_net(state_batch)[:,0].gather(1, action_batch)
     
         next_state_values = torch.zeros(BATCH_SIZE, device=device)
-        next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
+        next_state_values[non_final_mask] = target_net(non_final_next_states)[:,0].max(1)[0].detach()
         #next_state_values = target_net(non_final_next_states).max(1)[0].detach()
     
         # Compute the expected Q values
@@ -87,14 +89,15 @@ def update_model(memory, policy_net, target_net):
         optimizer.step()
     
 def env_initial_state():
-    state = np.repeat(0,2*state_dim)
+    state = np.repeat([[0],[0]],2*state_dim, axis=1)
     return state
 
-def env_step(t, state, action):
-    next_state = np.repeat(0,2*state_dim)
-    next_state[0] = price_grid[action]
-    next_state[1:state_dim] = state[0:state_dim-1]
-    reward = profit_t_response(next_state[0], next_state[1])
+def env_step(state, action):
+    next_state = np.repeat([[0],[0]],2*state_dim, axis=1)
+    next_state[:,0] = price_grid[action]
+    next_state[:, 1:state_dim] = state[:, 0:state_dim-1]
+    #reward = profit_t_response(next_state[0,0], next_state[0,1])
+    reward = profit_t_d(next_state[0,0], next_state[1,0])
     return next_state, reward
 
 def to_tensor(x):
@@ -103,20 +106,23 @@ def to_tensor(x):
 def to_tensor_long(x):
   return torch.tensor([[x]], device=device, dtype=torch.long)
 
-
 ###############################################################################
 # Training
-policy_net = DeepQNetwork(2*state_dim, len(price_grid)).to(device)
-target_net = DeepQNetwork(2*state_dim, len(price_grid)).to(device)
-optimizer = optim.Adam(policy_net.parameters(), lr = 0.005)
-policy = EpsilonGreedyPolicy()
-memory = ReplayMemory(10000)
-
-target_net.load_state_dict(policy_net.state_dict())
-target_net.eval()
-
 def training():
-        
+    policy_net = DeepQNetwork(2*state_dim, len(price_grid)).to(device)
+    target_net = DeepQNetwork(2*state_dim, len(price_grid)).to(device)
+    policy = EpsilonGreedyPolicy()
+    memory = ReplayMemory(10000)
+    TARGET_UPDATE = 20
+    
+    # the target_net load the parmeters of the policy_net
+    # state_dict() maps each layer to its parameter tensor
+    target_net.load_state_dict(policy_net.state_dict())
+    
+    # notify the layers that the target_net is not in training mode, the one in
+    # training mode is the policy_net
+    target_net.eval()
+    
     num_episodes = 100
     return_trace = []
     p_trace = [] # price schedules used in each episode
@@ -127,10 +133,10 @@ def training():
         for t in range(T):
             # Select and perform an action
             with torch.no_grad():
-              q_values = policy_net(to_tensor(state))
+              q_values = policy_net(to_tensor(state))[0]
             action = policy.select_action(q_values.detach().numpy())
     
-            next_state, reward = env_step(t, state, action)
+            next_state, reward = env_step(state, action)
     
             # Store the transition in memory
             memory.push(to_tensor(state), 
@@ -145,7 +151,7 @@ def training():
             update_model(memory, policy_net, target_net)
     
             reward_trace.append(reward)
-            p.append(price_grid[action])
+            p.append(price_grid[action][0])
     
         return_trace.append(sum(reward_trace))
         p_trace.append(p)
@@ -160,12 +166,32 @@ def training():
     plot_return_trace(return_trace)
     fig = plt.figure(figsize=(16, 7))
     plot_price_schedules(p_trace, 5, 1, T,fig.number)
-    
     return return_trace, p_trace
 
 
 return_trace, p_trace = training()
 
+"""
+profit_over_all_ep=[]
+for s in p_trace:
+    profit_over_all_ep.append(profit_response_d(s))
 
+profit_all = pd.DataFrame(profit_over_all_ep)
+profit_all = profit_all.rename(columns={0: 'profit'})
+profit_all = profit_all.sort_values(by=['profit'],ascending=False)
+
+ten_best_profit=[]
+ten_best_profit_price_curve=[]
+for i in range(10):
+    ten_best_profit.append(profit_all.values[i])
+    ten_best_profit_price_curve.append(p_trace[i])
+"""
+
+"""
+fig = plt.figure(figsize=(16,5))
+plt.plot(ten_best_profit_price_curve
+"""
+"""
 for profit in sorted(profit_response(s) for s in p_trace)[-10:]:
     print(f'Best profit results: {profit}')
+"""
