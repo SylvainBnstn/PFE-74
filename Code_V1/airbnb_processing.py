@@ -1,65 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jan  8 15:34:32 2021
-
-@author: huyan
-"""
-
-# -*- coding: utf-8 -*-
-
 
 import pandas as pd
-
-# URLS = ["http://data.insideairbnb.com/germany/bv/munich/2020-10-26/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2020-06-20/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2020-05-24/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2020-04-25/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2020-03-19/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2020-02-27/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2020-01-22/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-12-26/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-11-25/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-10-20/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-09-24/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-08-24/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-07-16/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-06-24/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-05-22/data/listings.csv.gz",
-# "http://data.insideairbnb.com/germany/bv/munich/2019-03-15/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-11-06/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-10-19/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-09-17/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-08-27/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-07-25/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-06-22/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-05-27/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-04-23/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-03-21/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-02-27/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2020-01-27/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-12-30/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-11-26/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-10-25/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-09-25/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-08-29/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-07-21/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-06-25/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-05-24/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-04-20/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-03-19/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-02-13/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2019-01-22/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-12-16/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-11-18/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-10-16/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-09-16/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-08-19/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-07-28/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-05-22/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2018-04-17/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2017-02-18/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2016-08-07/data/listings.csv.gz",
-# "http://data.insideairbnb.com/ireland/leinster/dublin/2016-01-06/data/listings.csv.gz"]
+from math import nan
 
 def get_url_list(path):
     url_file=open("urls.txt","r")
@@ -84,6 +27,8 @@ def get_data(url_list,expected_path, list_city):
     frame = []
     # liste regroupant les noms de colonnes a recuperer
     column_names = [ "id","property_type", "room_type", "accommodates", "bedrooms", "beds", "price","availability_30", "number_of_reviews","review_scores_rating",	"review_scores_accuracy" ]
+
+    missed_col =  ['square_feet','cleaning_fee']
     
     url_list = isolate_expected_urls(url_list, list_city)
     
@@ -91,13 +36,21 @@ def get_data(url_list,expected_path, list_city):
     for i in range(len(url_list)):
         
         #on read directement sur internet
-        df = pd.read_csv(url_list[i])
+        df_init = pd.read_csv(url_list[i])
         #on va splitter l'url pour recuperer le pays la ville et la date
         url_split = url_list[i].split("/")
         #on ne conserve que les colonnes interessantes
-        df = df[column_names]
+        df = df_init[column_names]
+        
+        for j in range(len(missed_col)):
+            if (missed_col[j] in list(df_init.columns)):
+                df[missed_col[j]] = df_init[missed_col[j]]
+            else:
+                df[missed_col[j]] = nan
+      
+        
         #on cree le contenu de ces colonnes
-        df["counrty"] = url_split[3]
+        df["country"] = url_split[3]
         df["city"] = url_split[5]
         df["date"] = url_split[6]
         #on ajoute la df dans la liste de df
@@ -115,6 +68,10 @@ def get_data(url_list,expected_path, list_city):
     result["price"] = result["price"].str.replace("$","")
     result["price"] = result["price"].str.replace(",","").astype(float)
     result["date"] = pd.to_datetime(result["date"])
+    result["cleaning_fee"].fillna("$0.00", inplace = True)
+    result["cleaning_fee"] = result["cleaning_fee"].str.replace("$","")
+    result["cleaning_fee"] = result["cleaning_fee"].str.replace(",","").astype(float)
+
     
     #Ajout de deux autres colonnes
     result["revenue_30"] = result["price"] *(30-result["availability_30"])
@@ -129,6 +86,6 @@ def load_data(path):
     print("\n°°°°° Chargement reussi! °°°°°")
     return df
 
-URLS=get_url_list("urls.txt")
-get_data(URLS,"data/airbnb_data.csv",["new-york-city","amsterdam"])
-load_data("data/airbnb_data3.csv")
+# URLS=get_url_list("urls.txt")
+# get_data(URLS,"airbnb_data.csv",["new-york-city","amsterdam"])
+# load_data("airbnb_data.csv")
