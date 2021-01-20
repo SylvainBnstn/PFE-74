@@ -117,12 +117,12 @@ class list_naiv_clients:
             #cas ou il reste de la place pour le mois qui vient
             if self.clients_list[i].echeance == 0 :
                 
-                if list_resa[self.clients_list[i].echeance-1] < 30 :
+                if list_resa[self.clients_list[i].echeance] < 30 :
                     
                     temp_inst+=1
                     #l'acheteur quitte le marché
                     list_sales.append(i)
-                    list_resa[self.clients_list[i].echeance-1] += 1
+                    list_resa[self.clients_list[i].echeance] += 1
                 else :
                     temp_repou+=1
                     #l'acheteur quitte le marché bredouille

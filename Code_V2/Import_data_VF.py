@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def get_data(file_name = "airbnb_data_nyc.csv"):
+def get_data(file_name = "airbnb_data.csv"):
     # Read the csv file
     result = pd.read_csv(file_name) 
     
@@ -28,7 +28,7 @@ def get_data(file_name = "airbnb_data_nyc.csv"):
     # Compute the mean price of each apt over time and keep apt with a mean price between 70 and 350
     mean_price_all_date = df.groupby("id", as_index = False).agg({"price" : ["mean"]})
     mean_price_all_date.columns = ["id","mean_price"]
-    mean_price_all_date = mean_price_all_date[(mean_price_all_date["mean_price"] >= 70) & (mean_price_all_date["mean_price"]<=350)]
+    mean_price_all_date = mean_price_all_date[(mean_price_all_date["mean_price"] >= 70) & (mean_price_all_date["mean_price"]<=230)]
     
     list_id = (mean_price_all_date["id"]).unique()
     data_with_all_date = data_with_all_date.loc[data_with_all_date.index.isin(list_id)]

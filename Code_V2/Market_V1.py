@@ -8,7 +8,7 @@ Created on Tue Dec  8 13:29:46 2020
 import Naiv_Clients_v2 as cnt
 import data_analysis as da
 import airbnb_processing as ap
-import Test_Class as tst
+import Model_DQN_VF as mdqn
 import naiv_strategic_clients as nsc
 
 
@@ -41,13 +41,15 @@ class Market:
         
         nb_row_naiv=self.df_naiv_sales.shape[0]
         data_temp_naiv=[nb_row_naiv,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_inst+temp_real]
+        achat_tot_naiv=temp_inst+temp_real
         self.df_naiv_sales.loc[nb_row_naiv]=data_temp_naiv
         
         nb_row_strat=self.df_strat_sales.shape[0]
         data_temp_strat=[nb_row_strat, price, buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, instant_buy + buy_done]
+        achat_tot_strat=instant_buy + buy_done
         self.df_strat_sales.loc[nb_row_strat]=data_temp_strat
         
-        return list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat
+        return list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat , achat_tot_naiv,achat_tot_strat
         
 
 
@@ -69,7 +71,8 @@ def test():
     strat_clients = nsc.list_smart_clients (100,200,30,df_arnaud)
     
     #on init le DQN
-    dqn=tst.DQN()
+    dqn=mdqn.DQN()
+    dqn.dqn_training(100)
     
     #on créé le marché
     market=Market()
@@ -77,9 +80,10 @@ def test():
     #TEEEEEEEEST
     
     ########
-    state = dqn.env_initial_test_state(150)#init price 
+    state = dqn.env_initial_test_state(150,0)#init price 
     reward_trace = []
-    p_trace = [state[0]]
+    p_trace = [state[0,0]]
+    booked=[state[0,1]]
     #############
     
     
@@ -93,8 +97,8 @@ def test():
         #arrivée d'un unique prix 
         
         ########## Remplacer par un aleat compris entre 50 et 250
-        reward,p, state= dqn.dqn_test(state)
-        reward_trace.append(reward)
+        p, state= dqn.dqn_interaction(state)
+
         p_trace.append(p)
         
         #########
@@ -104,7 +108,7 @@ def test():
         avail_rate=df_final.loc[df_final.index[k],"mean_availability_30"] / 30 
         final_rate=avail_rate+0.05
         
-        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,(df_final.shape[0]-1),p_trace)
+        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat, achat_naiv, achat_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,(df_final.shape[0]-1),p_trace)
         naiv_clients.update_client(100, 200, list_del_naiv,0.85,final_rate,k)
         strat_clients.update_client(100, 200, list_del_strat,k)
         
@@ -113,6 +117,11 @@ def test():
         
         list_resa_naiv_final.append(list_resa_naiv[0])
         list_resa_strat_final.append(list_resa_strat[0])
+        
+        state[1,0]=achat_naiv
+        reward=dqn.profit_t_d(state[0,0],state[1,0])
+        reward_trace.append(reward)
+        
         del list_resa_naiv[0]
         del list_resa_strat[0]
         
@@ -124,6 +133,8 @@ def test():
     
     print(list_resa_strat_final)    
     print(market.df_strat_sales)
+    
+    print(reward_trace)
 
         
 

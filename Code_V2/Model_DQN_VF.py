@@ -52,7 +52,7 @@ class DQN:
             transitions = memory.sample(self.BATCH_SIZE)
             batch = self.Transition(*zip(*transitions))
         
-            non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=self.device, dtype=torch.uint8)
+            non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=self.device, dtype=torch.bool)
             non_final_next_states = torch.stack([s for s in batch.next_state if s is not None])
             #non_final_next_states = torch.stack([s for s in batch.next_state if s is not None])
             
@@ -121,7 +121,7 @@ class DQN:
         return torch.tensor([[x]], device=self.device, dtype=torch.long)
     
     # Train
-    def dqn_training(self):
+    def dqn_training(self,num_episodes):
         # The target_net load the parmeters of the policy_net
         # state_dict() maps each layer to its parameter tensor
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -130,7 +130,7 @@ class DQN:
         # The one intraining mode is the policy_net
         self.target_net.eval()
         
-        num_episodes = 100
+        
         return_trace = []
         p_trace = [] # Price schedules used in each episode
         # Train num_episodes times
