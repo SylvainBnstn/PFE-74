@@ -23,24 +23,24 @@ import pandas as pd
 class Market:
     
     def __init__(self):        
-        data=[0,0,0,0,0,0,0,0,0,0]
+        data=[0,0,0,0,0,0,0,0]
         
-        self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Obli","Achat_Comp","Achat_Tot"])
+        self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
         self.df_naiv_sales.loc[0]=data
         
         self.df_strat_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
-        self.df_strat_sales.loc[0]= [0]* (len(data)-2)
+        self.df_strat_sales.loc[0]= data
 
         
     #fonction d'execution des ventes
     def check_sales(self, price, naiv_clients, list_resa_naiv, strat_clients, list_resa_strat, echeance, price_trace):
         
-        list_del_naiv, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, temp_obli, temp_comp, list_resa_naiv = naiv_clients.check_sales(price, list_resa_naiv)
+        list_del_naiv, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa_naiv = naiv_clients.check_sales(price, list_resa_naiv)
         
         list_del_strat ,buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, list_resa_strat = strat_clients.check_sales(price, echeance, price_trace, list_resa_strat )
         
         nb_row_naiv=self.df_naiv_sales.shape[0]
-        data_temp_naiv=[nb_row_naiv,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_obli, temp_comp,temp_inst+temp_real+temp_obli]
+        data_temp_naiv=[nb_row_naiv,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_inst+temp_real]
         self.df_naiv_sales.loc[nb_row_naiv]=data_temp_naiv
         
         nb_row_strat=self.df_strat_sales.shape[0]
@@ -104,7 +104,7 @@ def test():
         avail_rate=df_final.loc[df_final.index[k],"mean_availability_30"] / 30 
         final_rate=avail_rate+0.05
         
-        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,df_final.shape[0]-1,p_trace)
+        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,(df_final.shape[0]-1),p_trace)
         naiv_clients.update_client(100, 200, list_del_naiv,0.85,final_rate,k)
         strat_clients.update_client(100, 200, list_del_strat,k)
         

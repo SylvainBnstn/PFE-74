@@ -66,7 +66,6 @@ def get_data(url_list,expected_path, list_city):
     #Ajustement de types    
     result["price"] = result["price"].str.replace("$","")
     result["price"] = result["price"].str.replace(",","").astype(float)
-    result["date"] = pd.to_datetime(result["date"])
     result["cleaning_fee"].fillna("$0.00", inplace = True)
     result["cleaning_fee"] = result["cleaning_fee"].str.replace("$","")
     result["cleaning_fee"] = result["cleaning_fee"].str.replace(",","").astype(float)
@@ -76,7 +75,9 @@ def get_data(url_list,expected_path, list_city):
     result["revenue_30"] = result["price"] *(30-result["availability_30"])
     # nombre de jours révservés
     result["booked"] = 30-result["availability_30"] 
-    
+    result.sort_values(by=["id","date"], inplace = True)
+    result.reset_index(drop=True, inplace = True)
+    result.drop_duplicates(inplace= True)
     result.to_csv(expected_path, index=False)
     
 #fonction de chargement simplifié
@@ -85,6 +86,6 @@ def load_data(path):
     print("\n°°°°° Chargement reussi! °°°°°")
     return df
 
-URLS=get_url_list("urls.txt")
-get_data(URLS,"airbnb_data.csv",["new-york-city"])
-load_data("airbnb_data.csv")
+# URLS=get_url_list("urls.txt")
+# get_data(URLS,"airbnb_data.csv",["new-york-city"])
+# load_data("airbnb_data.csv")

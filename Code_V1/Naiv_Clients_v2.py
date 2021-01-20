@@ -25,7 +25,8 @@ class Naiv_client:
         return r
     
     def __repr__(self):
-        r=(self.prix_min,self.prix_max,self.will_to_pay)
+        # r=(self.prix_min,self.prix_max,self.will_to_pay,self.echeance)
+        r=(self.echeance)
         return str(r)
     
 class list_naiv_clients:
@@ -56,6 +57,8 @@ class list_naiv_clients:
             del self.clients_list[index]
             
     def check_sales(self,price, list_resa):
+        print(self.clients_list)
+        
         temp_envi = temp_real = temp_aban = temp_inst = temp_repou = temp_obli = temp_comp = 0
         
         #list des index des acheteurs ayant conclu un acht
@@ -69,43 +72,43 @@ class list_naiv_clients:
             #cas normal ou l'écheance est différ
             if self.clients_list[i].echeance >= 1  and list_resa[self.clients_list[i].echeance-1] < 30 :
             
-                #cas ou le prix est compris dans la cible
-                if (price >= self.clients_list[i].prix_min and price <= self.clients_list[i].prix_max):
-                    
-                    #on montre que l'achat est envisagé
-                    #temp_str =str("Achat envisagé -> ")
-                    temp_envi+=1
-                    proba_temp = random.random()
-                    
-                    #a revoir pour mise en place de WTP exacte
-                    if proba_temp <= self.clients_list[i].will_to_pay :
+                    #cas ou le prix est compris dans la cible
+                    if (price >= self.clients_list[i].prix_min and price <= self.clients_list[i].prix_max):
                         
-                        #temp_str+=str("Achat Réalisé")
-                        temp_real+=1
-                        #l'acheteur quitte le marché
+                        #on montre que l'achat est envisagé
+                        #temp_str =str("Achat envisagé -> ")
+                        temp_envi+=1
+                        proba_temp = random.random()
+                        
+                        #a revoir pour mise en place de WTP exacte
+                        if proba_temp <= self.clients_list[i].will_to_pay :
+                            
+                            #temp_str+=str("Achat Réalisé")
+                            temp_real+=1
+                            #l'acheteur quitte le marché
+                            list_sales.append(i)
+                            
+                            list_resa[self.clients_list[i].echeance-1] += 1
+                        
+                        else:
+                            #temp_str+=str("Achat Abandonnée")
+                            temp_aban+=1
+                        
+                        #print(temp_str)
+                    
+                    #cas ou cest moins chère que le prix min
+                    elif (price <= self.clients_list[i].prix_min):
+                        #print("Instant achat")
+                        temp_inst+=1
                         list_sales.append(i)
                         
                         list_resa[self.clients_list[i].echeance-1] += 1
                     
+                    #sinon
                     else:
-                        #temp_str+=str("Achat Abandonnée")
-                        temp_aban+=1
-                    
-                    #print(temp_str)
-                
-                #cas ou cest moins chère que le prix min
-                elif (price <= self.clients_list[i].prix_min):
-                    #print("Instant achat")
-                    temp_inst+=1
-                    list_sales.append(i)
-                    
-                    list_resa[self.clients_list[i].echeance-1] += 1
-                
-                #sinon
-                else:
-                    #print("Achat repoussé")
-                    temp_repou+=1
-                    
+                        #print("Achat repoussé")
+                        temp_repou+=1
+                        
             #cas normal ou l'écheance est différ
             if self.clients_list[i].echeance >= 1  and list_resa[self.clients_list[i].echeance-1] == 30 :
                 temp_comp+=1
@@ -116,19 +119,19 @@ class list_naiv_clients:
                 
                 if list_resa[self.clients_list[i].echeance-1] < 30 :
                     
-                    temp_obli+=1
+                    temp_inst+=1
                     #l'acheteur quitte le marché
                     list_sales.append(i)
                     list_resa[self.clients_list[i].echeance-1] += 1
                 else :
-                    temp_comp+=1
+                    temp_repou+=1
                     #l'acheteur quitte le marché bredouille
                     list_sales.append(i)
                     
             
             self.clients_list[i].echeance -= 1
         
-        return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou,temp_obli, temp_comp, list_resa
+        return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa
             
     def update_client(self,prix_min,prix_max,list_to_del,wtp,rate_to_assure,resting_time):
         self.del_client(list_to_del)

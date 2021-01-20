@@ -39,7 +39,8 @@ class Smart_client:
         return r
 
     def __repr__(self):
-        r = (self.prix_min, self.prix_max, self.will_to_pay)
+        # r = (self.prix_min, self.prix_max, self.will_to_pay,self.echeance)
+        r = (self.echeance)
         return str(r)
 
 
@@ -117,7 +118,7 @@ class list_smart_clients:
             if(self.clients_list[current_client].echeance == (max_echeance - i)):
                 wtp_echeance = pas_echeance * i
         # Limite de détermination wtp du paramètre echeance
-        if(echeance == 0):
+        if(max_echeance == 0):
             wtp_echeance = 0.5
 
         # Calcul final du wtp en fonction du prix et de l'échéance avec leur
@@ -179,6 +180,8 @@ class list_smart_clients:
 
     def check_sales(self, price, max_echeance, price_trace, list_resa):
         
+        print(self.clients_list)
+        
         ####" Mettre update
     
         buy_considered = buy_done = buy_dropped = instant_buy = buy_postponed = 0
@@ -204,11 +207,15 @@ class list_smart_clients:
                 
                 pas_price = round(1/3/range_price, 3)      
                 pas_echeance = round(1/3/max_echeance, 3)
+                
                 for i in range(range_price):
                     if(price ==int (self.clients_list[current_client].prix_max - i)):
                         wtp_price = pas_price * i
                 if(price <= self.clients_list[current_client].prix_min):
                     wtp_price = 1/3 #pas_price * 100
+                elif(price > self.clients_list[current_client].prix_max):
+                    wtp_price = 0 #pas_price * 100
+                
                 for i in range(max_echeance):
                     if( self.clients_list[current_client].echeance == max_echeance - i):
                         wtp_echeance = pas_echeance * i
@@ -218,7 +225,7 @@ class list_smart_clients:
                 wtp = wtp_price * poids_price + wtp_echeance * poids_echeance + actual_willingness * poids_rnd
 
                 # a revoir pour mise en place de WTP exacte
-                if (1-wtp) <= self.clients_list[current_client].will_to_pay:
+                if ((1-wtp) <= self.clients_list[current_client].will_to_pay) and list_resa[self.clients_list[current_client].echeance-1] < 30:
                     
                     condition_prix = self.strategic_price(price_trace, current_client)
                     #condition_prix = strategic_price_v2(p_trace)
@@ -226,19 +233,27 @@ class list_smart_clients:
                         #temp_str+=str("Achat Réalisé")
                         buy_done += 1
                         
-                        list_resa[self.clients_list[current_client].echeance-1] += 1
+                        list_resa[self.clients_list[current_client].echeance] += 1
                         
                         # l'acheteur quitte le marché
                         list_sales.append(current_client)
+                        
+                    elif self.clients_list[current_client].echeance == 0: 
+                        buy_done += 1
+                        
+                        list_resa[self.clients_list[current_client].echeance-1] += 1
+                        # l'acheteur quitte le marché
+                        list_sales.append(current_client)
 
+                    else:
+                        #temp_str+=str("Achat Abandonné")
+                        buy_dropped += 1
                 else:
-                    #temp_str+=str("Achat Abandonné")
                     buy_dropped += 1
 
-                # print(temp_str)
 
             # Lower price than minimum
-            elif (price <= self.clients_list[current_client].prix_min):
+            elif (price <= self.clients_list[current_client].prix_min) and list_resa[self.clients_list[current_client].echeance-1] < 30:
                 #print("Instant achat")
                 instant_buy += 1
                 list_resa[self.clients_list[current_client].echeance-1] += 1
@@ -249,6 +264,11 @@ class list_smart_clients:
                 #print("Achat repoussé")
                 buy_postponed += 1
                 
+                if  self.clients_list[current_client].echeance == 0: 
+
+                    # l'acheteur quitte le marché
+                    list_sales.append(current_client)
+                
             self.clients_list[current_client].echeance -= 1
 
         
@@ -258,7 +278,7 @@ class list_smart_clients:
         self.del_client(list_to_del)
         
         #on fait les WTP random
-        for _ in range(self.nb_client - len (list_to_del)):
+        for _ in range(len (list_to_del)):
             temp_min = self.get_min_x_percent(0.2)
             temp_max = self.get_max_x_percent(0.2)
             temp_wtp = rnd.random()
