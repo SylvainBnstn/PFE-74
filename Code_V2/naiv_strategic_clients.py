@@ -62,14 +62,12 @@ class list_smart_clients:
     '''
 
     def __init__(self, prix_min, prix_max, nb_client, df):
-        self.df = df
+        self.df = df.sort_values(by=["price"],ascending = True)
         self.nb_client =nb_client
         self.clients_list = []
         for _ in range(nb_client):
-            temp_min = rnd.uniform(
-                prix_min, prix_min + (prix_max - prix_min) / 2)
-            temp_max = rnd.uniform(
-                prix_min + (prix_max - prix_min) / 2, prix_max)
+            temp_min = self.get_min_x_percent(0.2)
+            temp_max = self.get_max_x_percent(0.2)
             temp_wtp = rnd.random()  # Willing To Pay
             self.clients_list.append(
                 Smart_client(
@@ -101,24 +99,28 @@ class list_smart_clients:
 
         # Pas des paramètres price et echeance dans les boucles pour le calcul
         # du wtp
-        range_price = (self.clients_list[current_client].prix_max-self.clients_list[current_client].prix_min)
+        range_price = int(self.clients_list[current_client].prix_max-self.clients_list[current_client].prix_min)
         pas_price = round(0.5/range_price, 3)       #0.005
         pas_echeance = round(0.5/max_echeance, 3) #0.045
 
         # Boucle de détermination wtp du paramètre price
         for i in range(range_price):
-            if(price == (self.clients_list[current_client].prix_max - i)):
+            if(price == int(self.clients_list[current_client].prix_max - i)):
                 wtp_price = pas_price * i
         # Limite de détermination wtp du paramètre price
         if(price <= self.clients_list[current_client].prix_min):
             wtp_price = 0.5
+        elif(price > self.clients_list[current_client].prix_max):
+            wtp_price = 0 #pas_price * 100
 
         # Boucle de détermination wtp du paramètre echeance
+        
+        
         for i in range(max_echeance):
             if(self.clients_list[current_client].echeance == (max_echeance - i)):
                 wtp_echeance = pas_echeance * i
         # Limite de détermination wtp du paramètre echeance
-        if(max_echeance == 0):
+        if(self.clients_list[current_client].echeance == 0):
             wtp_echeance = 0.5
 
         # Calcul final du wtp en fonction du prix et de l'échéance avec leur
@@ -137,7 +139,7 @@ class list_smart_clients:
         buy = False
         # Applique l'achat si deux baisses consécutives de prix
         for i in range(2):
-            if (price_trace[length-1]<price_trace[length-(i+1)-1]):
+            if (price_trace[length-1]<=price_trace[length-(i+1)-1]):
                 poids = poids + 1
         if (poids >= 2):
             if (price_trace[length-1]<=self.clients_list[current_client].prix_max or price_trace[length-1]>=self.clients_list[current_client].prix_min):
@@ -159,10 +161,12 @@ class list_smart_clients:
         return buy
 
     def get_min_x_percent(self, x):
-        return self.df['price'].head(int(x * self.df.size)).mean()
+        row = self.df.shape[0]        
+        return self.df['price'].head(int(x * row)).mean()
 
     def get_max_x_percent(self, x):
-        return self.df['price'].tail(int(x * self.df.size)).mean()
+        row = self.df.shape[0]        
+        return self.df['price'].tail(int(x * row)).mean()
 
     def update_min_max(self, price, max_echeance):
         # UPDATE ECHEANCE
@@ -171,9 +175,10 @@ class list_smart_clients:
         new_max = self.get_max_x_percent(0.2)
         # Boucle de parcours pour l'actualisation
         for i in range(len(self.clients_list)):
-            wtp = self.wtp_actualisation(price, max_echeance,i)
+           
             self.clients_list[i].prix_min = new_min
-            self.clients_list[i].prix_max = new_max
+            self.clients_list[i].prix_max = new_max 
+            wtp = self.wtp_actualisation(price, max_echeance,i)
             self.clients_list[i].will_to_pay = wtp
 
         # Sales verification and sold items deletion
@@ -181,6 +186,8 @@ class list_smart_clients:
     def check_sales(self, price, max_echeance, price_trace, list_resa):
         
         print(self.clients_list)
+        
+        self.update_min_max(price,max_echeance)
         
         ####" Mettre update
     
@@ -225,7 +232,7 @@ class list_smart_clients:
                 wtp = wtp_price * poids_price + wtp_echeance * poids_echeance + actual_willingness * poids_rnd
 
                 # a revoir pour mise en place de WTP exacte
-                if ((1-wtp) <= self.clients_list[current_client].will_to_pay) and list_resa[self.clients_list[current_client].echeance-1] < 30:
+                if ((1-wtp) <= self.clients_list[current_client].will_to_pay) and list_resa[self.clients_list[current_client].echeance] < 30:
                     
                     condition_prix = self.strategic_price(price_trace, current_client)
                     #condition_prix = strategic_price_v2(p_trace)
@@ -241,22 +248,27 @@ class list_smart_clients:
                     elif self.clients_list[current_client].echeance == 0: 
                         buy_done += 1
                         
-                        list_resa[self.clients_list[current_client].echeance-1] += 1
+                        list_resa[self.clients_list[current_client].echeance] += 1
                         # l'acheteur quitte le marché
                         list_sales.append(current_client)
 
                     else:
                         #temp_str+=str("Achat Abandonné")
                         buy_dropped += 1
+
                 else:
                     buy_dropped += 1
+                    if  self.clients_list[current_client].echeance == 0: 
+
+                        # l'acheteur quitte le marché
+                        list_sales.append(current_client)
 
 
             # Lower price than minimum
-            elif (price <= self.clients_list[current_client].prix_min) and list_resa[self.clients_list[current_client].echeance-1] < 30:
+            elif (price <= self.clients_list[current_client].prix_min) and list_resa[self.clients_list[current_client].echeance] < 30:
                 #print("Instant achat")
                 instant_buy += 1
-                list_resa[self.clients_list[current_client].echeance-1] += 1
+                list_resa[self.clients_list[current_client].echeance] += 1
                 list_sales.append(current_client)
 
             # Higher price than maximum
@@ -282,7 +294,10 @@ class list_smart_clients:
             temp_min = self.get_min_x_percent(0.2)
             temp_max = self.get_max_x_percent(0.2)
             temp_wtp = rnd.random()
-            temp_ech = rnd.randint(0,11-resting_time)
+            if 11-resting_time-1<= 0 :
+                temp_ech = 0
+            else:
+                temp_ech = rnd.randint(0,11-resting_time-1)
             self.clients_list.append(Smart_client(temp_min,temp_max,temp_wtp,temp_ech))
             
 

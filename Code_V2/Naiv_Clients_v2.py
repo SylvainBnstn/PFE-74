@@ -70,7 +70,7 @@ class list_naiv_clients:
             # print(i,",",self.clients_list[i].echeance)
             
             #cas normal ou l'écheance est différ
-            if self.clients_list[i].echeance >= 1  and list_resa[self.clients_list[i].echeance-1] < 30 :
+            if self.clients_list[i].echeance >= 1  and list_resa[self.clients_list[i].echeance] < 30 :
             
                     #cas ou le prix est compris dans la cible
                     if (price >= self.clients_list[i].prix_min and price <= self.clients_list[i].prix_max):
@@ -88,7 +88,7 @@ class list_naiv_clients:
                             #l'acheteur quitte le marché
                             list_sales.append(i)
                             
-                            list_resa[self.clients_list[i].echeance-1] += 1
+                            list_resa[self.clients_list[i].echeance] += 1
                         
                         else:
                             #temp_str+=str("Achat Abandonnée")
@@ -102,7 +102,7 @@ class list_naiv_clients:
                         temp_inst+=1
                         list_sales.append(i)
                         
-                        list_resa[self.clients_list[i].echeance-1] += 1
+                        list_resa[self.clients_list[i].echeance] += 1
                     
                     #sinon
                     else:
@@ -110,7 +110,7 @@ class list_naiv_clients:
                         temp_repou+=1
                         
             #cas normal ou l'écheance est différ
-            if self.clients_list[i].echeance >= 1  and list_resa[self.clients_list[i].echeance-1] == 30 :
+            if self.clients_list[i].echeance >= 1  and list_resa[self.clients_list[i].echeance] == 30 :
                 temp_comp+=1
                 
             
@@ -149,7 +149,10 @@ class list_naiv_clients:
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
             temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
             temp_wtp = random.random()
-            temp_ech = random.randint(0,11-resting_time)
+            if 11-resting_time-1 <= 0 :
+                temp_ech = 0
+            else:
+                temp_ech = random.randint(0,11-resting_time-1)
             self.clients_list.append(Naiv_client(temp_min,temp_max,temp_wtp,temp_ech))
             
         # print("Chiffre sorti du Q",(len(list_to_del) -aleat))
@@ -158,7 +161,10 @@ class list_naiv_clients:
         for _ in range(len(list_to_del) -aleat):
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
             temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
-            temp_ech = random.randint(0,11-resting_time)
+            if 11-resting_time-1 <= 0 :
+                temp_ech = 0
+            else:
+                temp_ech = random.randint(0,11-resting_time-1)
             self.clients_list.append(Naiv_client(temp_min,temp_max,wtp,temp_ech))
             
         # print("CList après",len(self.clients_list))

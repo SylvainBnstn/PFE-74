@@ -22,8 +22,14 @@ import pandas as pd
 
 class Market:
     
-    def __init__(self):        
+    def __init__(self, prix_min, prix_max, nb_clients, taux_naiv, wtp_to_assure, rate_to_assure, df):        
         data=[0,0,0,0,0,0,0,0]
+        
+        nb_naiv = int(nb_clients * taux_naiv)
+        nb_strat = nb_clients - nb_naiv
+        
+        self.naiv_clients = cnt.list_naiv_clients(prix_min,prix_max,nb_naiv,wtp_to_assure,rate_to_assure)
+        self.strat_clients = nsc.list_smart_clients (prix_min,prix_max,nb_strat,df)
         
         self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
         self.df_naiv_sales.loc[0]=data
@@ -74,10 +80,10 @@ def test():
     
     #on init le DQN
     dqn=mdqn.DQN()
-    dqn.dqn_training(100)
+    dqn.dqn_training(40)
     
     #on créé le marché
-    market=Market()
+    market=Market(100,200,30,0.8,0.85,0.15,df_start)
     
     #TEEEEEEEEST
     
@@ -120,7 +126,7 @@ def test():
         list_resa_naiv_final.append(list_resa_naiv[0])
         list_resa_strat_final.append(list_resa_strat[0])
         
-        state[1,0]=achat_naiv
+        state[1,0]=achat_strat
         reward=dqn.profit_t_d(state[0,0],state[1,0])
         reward_trace.append(reward)
         
