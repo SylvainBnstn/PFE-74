@@ -60,15 +60,17 @@ def test():
     df_start=ap.load_data("airbnb_data.csv")
     df_start=df_start.loc[(df_start["room_type"]=="Entire home/apt") & (df_start["price"]>=100) & (df_start["price"]<=200)]
     df_final=da.review_data(df_start,"new-york-city")
+    
+    print(df_final.columns)
+
 
     df_final=df_final.reset_index(drop=True)
     df_final=df_final.loc[df_final.shape[0]-12:df_final.shape[0]-1]
     
-    df_arnaud=ap.load_data("newyork2.csv")
     
     #définit une list de clients naif avec prix min, prix max et nb clients
     naiv_clients= cnt.list_naiv_clients(100,200,30,0.85,0.15)
-    strat_clients = nsc.list_smart_clients (100,200,30,df_arnaud)
+    strat_clients = nsc.list_smart_clients (100,200,30,df_start)
     
     #on init le DQN
     dqn=mdqn.DQN()
