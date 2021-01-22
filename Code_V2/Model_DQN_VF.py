@@ -15,10 +15,10 @@ import Import_data_VF
 
 
 class DQN:
-    def __init__(self):
+    def __init__(self, path, gamma ,learn_rate):
         # Import des variables et fonctions 
         # df_price & df_booked all date
-        self.price, self.booked = Import_data_VF.get_data()
+        self.price, self.booked = Import_data_VF.get_data(path)
         
         self.price_grid = Import_data_VF.training_data(self.price, self.booked)
         self.data_test_2019 = Import_data_VF.testing_data_2019(self.price, self.booked)[0].to_numpy()
@@ -28,21 +28,21 @@ class DQN:
         
         self.state_dim = len(self.price_grid)
         self.unit_cost = 50
-        
+        self.T = 12 # 12mois
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
-        self.policy_net = DeepQNetwork(2*self.state_dim, len(self.price_grid)).to(self.device)
-        self.target_net = DeepQNetwork(2*self.state_dim, len(self.price_grid)).to(self.device)
+        self.policy_net = DeepQNetwork(self.T + 1, len(self.price_grid)).to(self.device)
+        self.target_net = DeepQNetwork(self.T + 1, len(self.price_grid)).to(self.device)
         self.policy = EpsilonGreedyPolicy()
         self.memory = ReplayMemory(10000)
         
         self.TARGET_UPDATE = 20
-        self.GAMMA = 0.9
+        self.GAMMA = gamma
         self.BATCH_SIZE = 512
         
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr = 0.005)
-        self.T = 12 # 12mois
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr = learn_rate)
+
         
 ###############################################################################
     ### Training ###
@@ -61,10 +61,10 @@ class DQN:
             reward_batch = torch.stack(batch.reward)
         
             # q-value
-            state_action_values = policy_net(state_batch)[:,0].gather(1, action_batch)
+            state_action_values = policy_net(state_batch).gather(1, action_batch)
         
             next_state_values = torch.zeros(self.BATCH_SIZE, device=self.device)
-            next_state_values[non_final_mask] = target_net(non_final_next_states)[:,0].max(1)[0].detach()
+            next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
             #next_state_values = target_net(non_final_next_states).max(1)[0].detach()
     
             # Compute the expected Q values
@@ -82,15 +82,15 @@ class DQN:
     
     # Initizalize the state of shape (2xstate_dim) : state = (price, demand) * state_dim
     def env_initial_state(self):
-        state = np.repeat([[0],[0]],2*self.state_dim, axis=1)
+        state = np.repeat([[0],[0]],self.T + 1, axis=1)
         return state
     
     # Update one step ahead the state, next state = (price, demand) according the action took
     def env_step(self, state, action):
-        next_state = np.repeat([[0],[0]],2*self.state_dim, axis=1)
+        next_state = np.repeat([[0],[0]],self.T + 1, axis=1)
         next_state[:,0] = [self.price_grid[action][0],self.price_grid[action][2]]# Price & demand
         #next_state[:,0] = self.price_grid[action][0:3:2] #get the price & the demand col 0 to col 2 by step 2
-        next_state[:, 1:self.state_dim] = state[:, 0:self.state_dim-1]
+        next_state[:, 1:self.T] = state[:, 0:self.T-1]
         demand_ = self.demand(next_state[0,0],next_state[0,1])
         reward = self.profit_t_d(next_state[0,0], demand_)
         return next_state, reward, demand_
@@ -142,15 +142,16 @@ class DQN:
             for t in range(self.T):
                 # Select and perform an action
                 with torch.no_grad():
-                  q_values = self.policy_net(self.to_tensor(state))[0]
+                  q_values = self.policy_net(self.to_tensor(state))
                 action = self.policy.select_action(q_values.detach().numpy())
         
                 next_state, reward, _ = self.env_step(state, action)
+                # print("C",next_state)
         
                 # Store the transition in memory
                 self.memory.push(self.to_tensor(state), 
                             self.to_tensor_long(action), 
-                            self.to_tensor(next_state) if t != self.state_dim - 1 else None, 
+                            self.to_tensor(next_state) if t != self.T - 1 else None, 
                             self.to_tensor([reward]))
         
                 # Move to the next state
@@ -178,7 +179,7 @@ class DQN:
     ### Test ###
     # Initizalize the state of shape (2xstate_dim): state = (price & demand) * state_dim
     def env_initial_test_state(self,price, booked):
-        state = np.repeat([[0],[0]],2*self.state_dim, axis=1)
+        state = np.repeat([[0],[0]],self.T + 1, axis=1)
         state[:,0] = [price, booked]
         return state
     
@@ -201,7 +202,7 @@ class DQN:
        
             for t in range(len(data_test[0])): # Compute price for the period (here 1 year)
                 # Select and perform an action
-                q_values_test = self.target_net(self.to_tensor(state_test))[0]
+                q_values_test = self.target_net(self.to_tensor(state_test))
                 action_test = self.policy.select_action_test(q_values_test.detach().numpy())
             
                 next_state_test, reward_test, book = self.env_step(state_test, action_test)
@@ -244,9 +245,9 @@ class DQN:
     ### Interaction : once trained and tested, use the dqn in real interaction ###
     # Update one step the state, next state = price according to action took & demand that will be get later through customer
     def env_test_step(self, state, action):
-        next_state = np.repeat([[0],[0]],2*self.state_dim, axis=1)
+        next_state = np.repeat([[0],[0]],self.T + 1, axis=1)
         next_state[:,0] = [self.price_grid[action][0], False] #price_grid[action][0] because col 0 = col of price, and demand initialized to False
-        next_state[:, 1:self.state_dim] = state[:, 0:self.state_dim-1]      
+        next_state[:, 1:self.T] = state[:, 0:self.T-1]      
         return next_state
         
 
@@ -257,7 +258,7 @@ class DQN:
         state_test = initial_state
         
         # Select and perform an action
-        q_values_test = self.target_net(self.to_tensor(state_test))[0]
+        q_values_test = self.target_net(self.to_tensor(state_test))
         action_test = self.policy.select_action_test(q_values_test.detach().numpy())
 
         next_state_test = self.env_test_step(state_test, action_test)

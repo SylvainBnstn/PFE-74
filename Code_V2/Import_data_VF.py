@@ -58,9 +58,9 @@ def training_data(df_price, df_booked):
         
     # Concatenate the price grid of all apt and get the unique in row
     all_price_grid = np.concatenate(price_grid_total)
-    all_unique_price_grid = np.unique(all_price_grid, axis=0)
+    # all_unique_price_grid = np.unique(all_price_grid, axis=0)
     
-    return all_unique_price_grid
+    return all_price_grid
     
 #df = training_data(df_p, df_b)
 

@@ -79,7 +79,6 @@ class Market:
     def check_sales_v2(self, price, echeance, price_trace):
         
         self.list_del_naiv, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, self.list_resa_glob, self.list_resa_naiv = self.naiv_clients.check_sales(price, self.list_resa_glob, self.list_resa_naiv)
-        
 
         self.list_del_strat ,buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed,self.list_resa_glob, self.list_resa_strat = self.strat_clients.check_sales(price, echeance, price_trace, self.list_resa_glob, self.list_resa_strat )
         
@@ -137,7 +136,7 @@ def test():
     
     
     #on init le DQN
-    dqn=mdqn.DQN()
+    dqn=mdqn.DQN("airbnb_data.csv",0.9,0.015)
     dqn.dqn_training(40)
     
     #on créé le marché
@@ -147,13 +146,11 @@ def test():
     
     ########
     state = dqn.env_initial_test_state(150,0)#init price 
+    print("C",state)
     reward_trace = []
     p_trace = [state[0,0]]
     booked=[state[0,1]]
     #############
-    
-    
-   
     
     for k in range(df_final.shape[0]):    
         
@@ -170,7 +167,7 @@ def test():
         
         achat_naiv, achat_strat = market.updates(p,p_trace,k)
         
-        
+        #a corriger
         state[1,0]=achat_strat + achat_naiv
         reward=dqn.profit_t_d(state[0,0],state[1,0])
         reward_trace.append(reward)
