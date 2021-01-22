@@ -32,8 +32,8 @@ class DQN:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
-        self.policy_net = DeepQNetwork(self.T + 1, len(self.price_grid)).to(self.device)
-        self.target_net = DeepQNetwork(self.T + 1, len(self.price_grid)).to(self.device)
+        self.policy_net = DeepQNetwork(self.T +1, len(self.price_grid)).to(self.device)
+        self.target_net = DeepQNetwork(self.T +1, len(self.price_grid)).to(self.device)
         self.policy = EpsilonGreedyPolicy()
         self.memory = ReplayMemory(10000)
         
@@ -146,7 +146,7 @@ class DQN:
                 action = self.policy.select_action(q_values.detach().numpy())
         
                 next_state, reward, _ = self.env_step(state, action)
-                # print("C",next_state)
+                print("C",next_state)
         
                 # Store the transition in memory
                 self.memory.push(self.to_tensor(state), 
