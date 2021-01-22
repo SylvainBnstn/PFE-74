@@ -56,7 +56,7 @@ class list_naiv_clients:
         for index in sorted(list_i, reverse=True):
             del self.clients_list[index]
             
-    def check_sales(self,price, list_resa):
+    def check_sales(self,price, list_resa, list_resa_scnd):
         print(self.clients_list)
         
         temp_envi = temp_real = temp_aban = temp_inst = temp_repou = temp_obli = temp_comp = 0
@@ -89,6 +89,7 @@ class list_naiv_clients:
                             list_sales.append(i)
                             
                             list_resa[self.clients_list[i].echeance] += 1
+                            list_resa_scnd[self.clients_list[i].echeance] += 1
                         
                         else:
                             #temp_str+=str("Achat Abandonnée")
@@ -103,6 +104,7 @@ class list_naiv_clients:
                         list_sales.append(i)
                         
                         list_resa[self.clients_list[i].echeance] += 1
+                        list_resa_scnd[self.clients_list[i].echeance] += 1
                     
                     #sinon
                     else:
@@ -123,6 +125,7 @@ class list_naiv_clients:
                     #l'acheteur quitte le marché
                     list_sales.append(i)
                     list_resa[self.clients_list[i].echeance] += 1
+                    list_resa_scnd[self.clients_list[i].echeance] += 1
                 else :
                     temp_repou+=1
                     #l'acheteur quitte le marché bredouille
@@ -131,7 +134,7 @@ class list_naiv_clients:
             
             self.clients_list[i].echeance -= 1
         
-        return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa
+        return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa, list_resa_scnd
             
     def update_client(self,prix_min,prix_max,list_to_del,wtp,rate_to_assure,resting_time):
         self.del_client(list_to_del)

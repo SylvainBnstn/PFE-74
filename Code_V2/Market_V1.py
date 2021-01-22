@@ -22,20 +22,39 @@ import pandas as pd
 
 class Market:
     
-    def __init__(self, prix_min, prix_max, nb_clients, taux_naiv, wtp_to_assure, rate_to_assure, df):        
+    def __init__(self, prix_min, prix_max, nb_clients, taux_naiv, wtp_to_assure, rate_to_assure, df_price, df_mean):        
         data=[0,0,0,0,0,0,0,0]
+        
+        self.prix_min = prix_min
+        self.prix_max = prix_max
         
         nb_naiv = int(nb_clients * taux_naiv)
         nb_strat = nb_clients - nb_naiv
         
+        self.df_price = df_price
+        self.df_mean = df_mean
+        
+        self.wtp_to_assure = wtp_to_assure
+        
         self.naiv_clients = cnt.list_naiv_clients(prix_min,prix_max,nb_naiv,wtp_to_assure,rate_to_assure)
-        self.strat_clients = nsc.list_smart_clients (prix_min,prix_max,nb_strat,df)
+        self.strat_clients = nsc.list_smart_clients (prix_min,prix_max,nb_strat,self.df_price)
+        
+        self.list_resa_naiv = [0]* self.df_mean.shape[0]
+        self.list_resa_naiv_final = []
+        self.list_resa_strat = [0]* self.df_mean.shape[0]
+        self.list_resa_strat_final = [] 
+        
+        self.list_resa_glob = [0]* self.df_mean.shape[0]
+        self.list_resa_glob_final = [] 
         
         self.df_naiv_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
         self.df_naiv_sales.loc[0]=data
         
         self.df_strat_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
         self.df_strat_sales.loc[0]= data
+        
+        self.df_glob_sales = pd.DataFrame(columns= ["Ite","Prix","Achat_Envi","Achat_Real","Achat_Aban","Achat_Inst","Achat_Repou","Achat_Tot"])
+        self.df_glob_sales.loc[0]= data
 
         
     #fonction d'execution des ventes
@@ -56,6 +75,49 @@ class Market:
         self.df_strat_sales.loc[nb_row_strat]=data_temp_strat
         
         return list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat , achat_tot_naiv,achat_tot_strat
+    
+    def check_sales_v2(self, price, echeance, price_trace):
+        
+        self.list_del_naiv, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, self.list_resa_glob, self.list_resa_naiv = self.naiv_clients.check_sales(price, self.list_resa_glob, self.list_resa_naiv)
+        
+
+        self.list_del_strat ,buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed,self.list_resa_glob, self.list_resa_strat = self.strat_clients.check_sales(price, echeance, price_trace, self.list_resa_glob, self.list_resa_strat )
+        
+        nb_row_naiv=self.df_naiv_sales.shape[0]
+        self.df_naiv_sales.loc[nb_row_naiv]=[nb_row_naiv,price,temp_envi,temp_real,temp_aban,temp_inst,temp_repou,temp_inst+temp_real]
+        
+        nb_row_strat=self.df_strat_sales.shape[0]
+        self.df_strat_sales.loc[nb_row_strat]=[nb_row_strat, price, buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, instant_buy + buy_done]
+        
+        nb_row_glob=self.df_glob_sales.shape[0]
+        self.df_glob_sales.loc[nb_row_glob]=[nb_row_glob, price,temp_envi+buy_considered, temp_real+buy_done, temp_aban+buy_dropped, temp_inst+instant_buy, temp_repou+buy_postponed, temp_inst + temp_real + instant_buy + buy_done]
+        
+        self.list_resa_naiv_final.append(self.list_resa_naiv[0])
+        self.list_resa_strat_final.append(self.list_resa_strat[0])
+        self.list_resa_glob_final.append(self.list_resa_glob[0])
+        
+        del self.list_resa_naiv[0]
+        del self.list_resa_strat[0]
+        del self.list_resa_glob[0]
+        
+        achat_tot_naiv=temp_inst+temp_real
+        achat_tot_strat=instant_buy + buy_done
+        
+        return achat_tot_naiv, achat_tot_strat
+    
+    def updates(self,price,p_trace,ite):
+        
+        avail_rate=self.df_mean.loc[self.df_mean.index[ite],"mean_availability_30"] / 30 
+        final_rate=avail_rate+0.05
+        
+        # self.list_del_naiv, self.list_resa_naiv, self.list_del_strat, self.list_resa_strat, achat_naiv, achat_strat = self.check_sales(price,self.naiv_clients,self.list_resa_naiv,self.strat_clients,self.list_resa_strat,(self.df_mean.shape[0]-1),p_trace)
+        
+        achat_naiv, achat_strat = self.check_sales_v2( price, (self.df_mean.shape[0]-1), p_trace)
+        
+        self.naiv_clients.update_client(self.prix_min, self.prix_min, self.list_del_naiv,self.wtp_to_assure,final_rate,ite)
+        self.strat_clients.update_client(self.prix_min, self.prix_max, self.list_del_strat,ite)
+        
+        return achat_naiv, achat_strat
         
 
 
@@ -74,16 +136,12 @@ def test():
     df_final=df_final.loc[df_final.shape[0]-12:df_final.shape[0]-1]
     
     
-    #définit une list de clients naif avec prix min, prix max et nb clients
-    naiv_clients= cnt.list_naiv_clients(100,200,30,0.85,0.15)
-    strat_clients = nsc.list_smart_clients (100,200,30,df_start)
-    
     #on init le DQN
     dqn=mdqn.DQN()
     dqn.dqn_training(40)
     
     #on créé le marché
-    market=Market(100,200,30,0.8,0.85,0.15,df_start)
+    market=Market(100,200,30,0.8,0.85,0.15,df_start,df_final)
     
     #TEEEEEEEEST
     
@@ -95,10 +153,7 @@ def test():
     #############
     
     
-    list_resa_naiv = [0]* df_final.shape[0]
-    list_resa_naiv_final = []
-    list_resa_strat = list_resa_naiv.copy()
-    list_resa_strat_final = []    
+   
     
     for k in range(df_final.shape[0]):    
         
@@ -113,34 +168,24 @@ def test():
         
         print(p)
         
-        avail_rate=df_final.loc[df_final.index[k],"mean_availability_30"] / 30 
-        final_rate=avail_rate+0.05
+        achat_naiv, achat_strat = market.updates(p,p_trace,k)
         
-        list_del_naiv, list_resa_naiv, list_del_strat, list_resa_strat, achat_naiv, achat_strat = market.check_sales(p,naiv_clients,list_resa_naiv,strat_clients,list_resa_strat,(df_final.shape[0]-1),p_trace)
-        naiv_clients.update_client(100, 200, list_del_naiv,0.85,final_rate,k)
-        strat_clients.update_client(100, 200, list_del_strat,k)
         
-        print (list_resa_naiv)
-        print (list_resa_strat)
-        
-        list_resa_naiv_final.append(list_resa_naiv[0])
-        list_resa_strat_final.append(list_resa_strat[0])
-        
-        state[1,0]=achat_strat
+        state[1,0]=achat_strat + achat_naiv
         reward=dqn.profit_t_d(state[0,0],state[1,0])
         reward_trace.append(reward)
-        
-        del list_resa_naiv[0]
-        del list_resa_strat[0]
-        
+           
         #retour de la demande 
         
     print(df_final)
-    print(list_resa_naiv_final)    
+    print(market.list_resa_naiv_final)    
     print(market.df_naiv_sales)
     
-    print(list_resa_strat_final)    
+    print(market.list_resa_strat_final)    
     print(market.df_strat_sales)
+    
+    print(market.list_resa_glob_final)    
+    print(market.df_glob_sales)
     
     print(reward_trace)
 

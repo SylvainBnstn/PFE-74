@@ -183,7 +183,7 @@ class list_smart_clients:
 
         # Sales verification and sold items deletion
 
-    def check_sales(self, price, max_echeance, price_trace, list_resa):
+    def check_sales(self, price, max_echeance, price_trace, list_resa, list_resa_scnd):
         
         print(self.clients_list)
         
@@ -241,6 +241,7 @@ class list_smart_clients:
                         buy_done += 1
                         
                         list_resa[self.clients_list[current_client].echeance] += 1
+                        list_resa_scnd[self.clients_list[current_client].echeance] += 1
                         
                         # l'acheteur quitte le marché
                         list_sales.append(current_client)
@@ -249,6 +250,7 @@ class list_smart_clients:
                         buy_done += 1
                         
                         list_resa[self.clients_list[current_client].echeance] += 1
+                        list_resa_scnd[self.clients_list[current_client].echeance] += 1
                         # l'acheteur quitte le marché
                         list_sales.append(current_client)
 
@@ -269,6 +271,7 @@ class list_smart_clients:
                 #print("Instant achat")
                 instant_buy += 1
                 list_resa[self.clients_list[current_client].echeance] += 1
+                list_resa_scnd[self.clients_list[current_client].echeance] += 1
                 list_sales.append(current_client)
 
             # Higher price than maximum
@@ -284,7 +287,7 @@ class list_smart_clients:
             self.clients_list[current_client].echeance -= 1
 
         
-        return list_sales ,buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, list_resa
+        return list_sales ,buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, list_resa, list_resa_scnd
     
     def update_client(self,prix_min,prix_max,list_to_del,resting_time):
         self.del_client(list_to_del)
