@@ -15,10 +15,10 @@ import Import_data_VF
 
 
 class DQN:
-    def __init__(self, path, gamma ,learn_rate):
+    def __init__(self, path, gamma ,learn_rate, train_proportion):
         # Import des variables et fonctions 
         # df_price & df_booked all date
-        self.price, self.booked,self.proportion= Import_data_VF.get_data(0.83,path)
+        self.price, self.booked,self.proportion= Import_data_VF.get_data(train_proportion,path)
         
         ### state 
         self.price_grid = Import_data_VF.training_data(self.price, self.booked,self.proportion)
@@ -33,7 +33,7 @@ class DQN:
         
         self.unit_cost = 50
         
-        self.T = 58 # 12mois
+        self.T = self.proportion # 12mois
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
@@ -42,11 +42,11 @@ class DQN:
         self.policy_net = DeepQNetwork(self.state_dim, len(range(70,230))).to(self.device)
         self.target_net = DeepQNetwork(self.state_dim, len(range(70,230)) ).to(self.device)
         self.policy = EpsilonGreedyPolicy()
-        self.memory = ReplayMemory(10000)
+        self.memory = ReplayMemory(100000)
         
         self.TARGET_UPDATE = 20
         self.GAMMA = gamma
-        self.BATCH_SIZE = 500
+        self.BATCH_SIZE = 32
         
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr = learn_rate)
 
@@ -147,7 +147,7 @@ class DQN:
         #next_state[:,0] = self.price_grid[action][0:3:2] #get the price & the demand col 0 to col 2 by step 2
         next_state[:, 1:self.T] = state[:, 0:self.T-1]
         
-        demand_ = self.demand(next_state[0,0],next_state[0,1])
+        demand_ = self.demand(next_state[0,0],next_state[2,0])
         reward = self.profit_t_d(next_state[0,0], demand_)
         return next_state.transpose(), reward, demand_
     
@@ -160,14 +160,16 @@ class DQN:
         return p_t*demand - tot_cost
     
     # Get back the demand for a given variation of price
-    def demand(self, pt, pt_1):
+    def demand(self, pt, date):
         # For a similar variation of price, we take the demand corresponding from the data
-        diff = pt - pt_1
-        closer_variation = [abs(diff - diff_data) for diff_data in self.price_grid[:,1]]#colonne 2 = diff de prix from data
-#        for diff_data in self.price_grid[:,1]:
-#            closer_variation= abs(diff - diff_data) 
-        closer_index = np.argmin(closer_variation)
-        demand_ = self.price_grid[closer_index,2] # col 2 = demand
+        list_of_demande = []
+        for k in range(len(self.price_grid)):
+            if pt == self.price_grid[k,0] and date == self.price_grid[k,2]:
+                list_of_demande.append(self.price_grid[k,1])
+        #colonne 2 = diff de prix from data
+        # closer_index = np.argmin(closer_variation)
+        # demand_ = self.price_grid[closer_index,2] # col 2 = demand
+        demand_ = int(np.mean(list_of_demande))
         return demand_
     
     # Convert numpy to tensor object of type float

@@ -137,8 +137,10 @@ def test():
     
     
     #on init le DQN
-    dqn=mdqn.DQN("airbnb_data.csv",0.9,0.015)
-    dqn.dqn_training(20)
+    dqn=mdqn.DQN("airbnb_data.csv",0.95,0.015,0.83)
+    return_trace, p_trace =dqn.dqn_training(80)
+    
+    dqn.plot_result(return_trace, p_trace)
     
     #on créé le marché
     market=Market(100,200,30,0.8,0.85,0.15,df_start,df_final)
@@ -174,7 +176,7 @@ def test():
         reward_trace.append(reward)
            
         #retour de la demande 
-        
+    
     print(df_final)
     print(market.list_resa_naiv_final)    
     print(market.df_naiv_sales)
