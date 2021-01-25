@@ -1,9 +1,10 @@
 from Model_DQN_VF import DQN
 
-dqn = DQN()
+dqn = DQN("airbnb_data.csv",0.95,0.001)
+
 
 def execute_train():
-    return_trace, p_trace = dqn.dqn_training()
+    return_trace, p_trace = dqn.dqn_training(40)
     dqn.plot_result(return_trace, p_trace)
     return return_trace, p_trace
     

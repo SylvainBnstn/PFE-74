@@ -18,82 +18,138 @@ class DQN:
     def __init__(self, path, gamma ,learn_rate):
         # Import des variables et fonctions 
         # df_price & df_booked all date
-        self.price, self.booked = Import_data_VF.get_data(path)
+        self.price, self.booked,self.proportion= Import_data_VF.get_data(0.83,path)
         
-        self.price_grid = Import_data_VF.training_data(self.price, self.booked)
+        ### state 
+        self.price_grid = Import_data_VF.training_data(self.price, self.booked,self.proportion)
+        
         self.data_test_2019 = Import_data_VF.testing_data_2019(self.price, self.booked)[0].to_numpy()
         self.data_test_booked_2019 = Import_data_VF.testing_data_2019(self.price, self.booked)[1].to_numpy()
         self.data_test_2020 = Import_data_VF.testing_data_2020(self.price, self.booked)[0].to_numpy()
         self.data_test_booked_2020 = Import_data_VF.testing_data_2020(self.price, self.booked)[1].to_numpy()
         
-        self.state_dim = len(self.price_grid)
+        self.state_dim = len(self.price_grid[0])
+        
+        
         self.unit_cost = 50
-        self.T = 12 # 12mois
+        
+        self.T = 58 # 12mois
+        
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
         self.Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
-
-        self.policy_net = DeepQNetwork(self.T + 1, len(self.price_grid)).to(self.device)
-        self.target_net = DeepQNetwork(self.T + 1, len(self.price_grid)).to(self.device)
+        
+        self.policy_net = DeepQNetwork(self.state_dim, len(range(70,230))).to(self.device)
+        self.target_net = DeepQNetwork(self.state_dim, len(range(70,230)) ).to(self.device)
         self.policy = EpsilonGreedyPolicy()
         self.memory = ReplayMemory(10000)
         
         self.TARGET_UPDATE = 20
         self.GAMMA = gamma
-        self.BATCH_SIZE = 512
+        self.BATCH_SIZE = 500
         
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr = learn_rate)
 
         
 ###############################################################################
     ### Training ###
-    # Update the model
+    # Update the models
     def update_model(self, memory, policy_net, target_net):
-        if self.BATCH_SIZE < len(memory):
-            transitions = memory.sample(self.BATCH_SIZE)
-            batch = self.Transition(*zip(*transitions))
-        
-            non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=self.device, dtype=torch.bool)
-            non_final_next_states = torch.stack([s for s in batch.next_state if s is not None])
-            #non_final_next_states = torch.stack([s for s in batch.next_state if s is not None])
-            
-            state_batch = torch.stack(batch.state)
-            action_batch = torch.cat(batch.action)
-            reward_batch = torch.stack(batch.reward)
-        
-            # q-value
-            state_action_values = policy_net(state_batch).gather(1, action_batch)
-        
-            next_state_values = torch.zeros(self.BATCH_SIZE, device=self.device)
-            next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
-            #next_state_values = target_net(non_final_next_states).max(1)[0].detach()
+        if len(memory) < self.BATCH_SIZE:
+            return
+        transitions = memory.sample(self.BATCH_SIZE)
+        # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
+        # detailed explanation). This converts batch-array of Transitions
+        # to Transition of batch-arrays.
+        batch = self.Transition(*zip(*transitions))
     
-            # Compute the expected Q values
-            expected_state_action_values = reward_batch[:, 0] + (self.GAMMA * next_state_values)  
+        # Compute a mask of non-final states and concatenate the batch elements
+        # (a final state would've been the one after which simulation ended)
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=self.device, dtype=torch.bool)
+        non_final_next_states = torch.stack([s for s in batch.next_state if s is not None])
         
-            # Compute Huber loss
-            loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
-            
-            # Optimize the model
-            self.optimizer.zero_grad()
-            loss.backward()
-            for param in policy_net.parameters():
-                param.grad.data.clamp_(-1, 1)
-            self.optimizer.step()
+        state_batch = torch.stack(batch.state)
+        action_batch = torch.cat(batch.action)
+        reward_batch = torch.stack(batch.reward)
+        action_batch=action_batch.unsqueeze(2)
+        
+        
+        #action_batch=torch.unsqueeze(action_batch,dim=2)
+              
+#        print(state_batch.shape)
+    
+        #print("hellooo1",policy_net(state_batch)[0].shape)
+#        print("hellooo2",policy_net(state_batch)[:,0][0].shape)
+#        print("hellooo3",policy_net(state_batch)[:,:,0].shape)
+#        print("hello1", action_batch)
+#        print("hello5", policy_net(state_batch))
+#        print("hello",action_batch.shape)
+#        print("hellooo4",policy_net(state_batch).view(action_batch.size(0),-1,action_batch.size(-1)).shape)
+#       
+        # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
+        # columns of actions taken. These are the actions which would've been taken
+        # for each batch state according to policy_net
+        temp= policy_net(state_batch).view(action_batch.size(0),-1,action_batch.size(-1))
+        state_action_values = temp.gather(1, action_batch)
+       
+       
+        next_state_values = torch.zeros(self.BATCH_SIZE, device=self.device)
+#        
+#        print("aa",non_final_mask) 
+#        print("aaa",non_final_mask.shape) # 500
+#         
+#        print("ccccc", non_final_next_states)
+#        print("cccccccc",non_final_next_states.shape) # [28536, 3] 
+#        
+#        print("aza",next_state_values[non_final_mask]) 
+#        print("a",next_state_values[non_final_mask].shape) # 492
+#        
+#    
+#        
+#        print("aeaea",target_net(non_final_next_states))
+#        print("b",target_net(non_final_next_states).shape) # [28536, 160]
+#        
+#        print("c",len(target_net(non_final_next_states).max(1))) # val + indice, len = 2 
+#        print("d",len(target_net(non_final_next_states).max(1)[0])) # valeur , len =28536
+#        print("e",len(target_net(non_final_next_states).max(1)[0].detach().max(1)[0])) # sans grad ,len=28536
+#        print("eeee",target_net(non_final_next_states).max(1)[0].detach().max(1)[0])
+#        
+    
+        next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach().max(1)[0]
+        
+        
+        # Compute the expected Q values
+        expected_state_action_values = reward_batch[:, 0] + (self.GAMMA * next_state_values)
+    
+        # Compute Huber loss
+        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+        
+        # Optimize the model
+        self.optimizer.zero_grad()
+        loss.backward()
+        for param in policy_net.parameters():
+        
+            param.grad.data.clamp_(-1, 1)
+        self.optimizer.step()
+    
+        return state_action_values 
     
     # Initizalize the state of shape (2xstate_dim) : state = (price, demand) * state_dim
     def env_initial_state(self):
-        state = np.repeat([[0],[0]],self.T + 1, axis=1)
-        return state
+        state = np.repeat([[0],[0],[0]],self.T, axis=1)
+        return state.transpose()
     
     # Update one step ahead the state, next state = (price, demand) according the action took
     def env_step(self, state, action):
-        next_state = np.repeat([[0],[0]],self.T + 1, axis=1)
-        next_state[:,0] = [self.price_grid[action][0],self.price_grid[action][2]]# Price & demand
+        next_state = np.repeat([[0],[0],[0]],self.T, axis=1)
+        
+        next_state[:,0] = [self.price_grid[action][0],self.price_grid[action][1],self.price_grid[action][2]]# Price & demand
         #next_state[:,0] = self.price_grid[action][0:3:2] #get the price & the demand col 0 to col 2 by step 2
         next_state[:, 1:self.T] = state[:, 0:self.T-1]
+        
         demand_ = self.demand(next_state[0,0],next_state[0,1])
         reward = self.profit_t_d(next_state[0,0], demand_)
-        return next_state, reward, demand_
+        return next_state.transpose(), reward, demand_
     
     # Compute the profit given a price and a demand
     def profit_t_d(self, p_t, demand):
@@ -108,10 +164,12 @@ class DQN:
         # For a similar variation of price, we take the demand corresponding from the data
         diff = pt - pt_1
         closer_variation = [abs(diff - diff_data) for diff_data in self.price_grid[:,1]]#colonne 2 = diff de prix from data
+#        for diff_data in self.price_grid[:,1]:
+#            closer_variation= abs(diff - diff_data) 
         closer_index = np.argmin(closer_variation)
         demand_ = self.price_grid[closer_index,2] # col 2 = demand
         return demand_
-
+    
     # Convert numpy to tensor object of type float
     def to_tensor(self, x):
         return torch.from_numpy(np.array(x).astype(np.float32))
@@ -130,22 +188,26 @@ class DQN:
         # The one intraining mode is the policy_net
         self.target_net.eval()
         
-        
         return_trace = []
         p_trace = [] # Price schedules used in each episode
         # Train num_episodes times
         for i_episode in range(num_episodes):
             state = self.env_initial_state()
+            print("---",i_episode)
+            #state = state.transpose()
             reward_trace = []
             p = []
             # For each time step, compute a price (compute T prices in total)
             for t in range(self.T):
                 # Select and perform an action
+                
                 with torch.no_grad():
                   q_values = self.policy_net(self.to_tensor(state))
                 action = self.policy.select_action(q_values.detach().numpy())
-        
-                next_state, reward, _ = self.env_step(state, action)
+
+                next_state, reward, _ = self.env_step(state.transpose(), action)
+                #next_state=next_state.transpose()
+                
                 # print("C",next_state)
         
                 # Store the transition in memory
@@ -156,13 +218,12 @@ class DQN:
         
                 # Move to the next state
                 state = next_state
-        
                 # Perform one step of the optimization (on the target network)
                 self.update_model(self.memory, self.policy_net, self.target_net)
         
                 reward_trace.append(reward)
                 p.append(self.price_grid[action][0])
-        
+            
             return_trace.append(sum(reward_trace))
             p_trace.append(p)
         
@@ -175,13 +236,15 @@ class DQN:
 
         return return_trace, p_trace
 
+
 ###############################################################################  
     ### Test ###
     # Initizalize the state of shape (2xstate_dim): state = (price & demand) * state_dim
-    def env_initial_test_state(self,price, booked):
-        state = np.repeat([[0],[0]],self.T + 1, axis=1)
-        state[:,0] = [price, booked]
-        return state
+    def env_initial_test_state(self,price, booked,date):
+        state = np.repeat([[0],[0],[0]],self.T + 1, axis=1)
+        state[:,0] = [price, booked,date]
+        print("ccc",state[:,0])
+        return state.transpose()
     
     # Test
     def dqn_test(self, data_test, data_test_booked):
@@ -193,7 +256,7 @@ class DQN:
         # Go through each apt
         for k in range(len(data_test)):
             
-            state_test = self.env_initial_test_state(data_test[k,0], data_test_booked[k,0])
+            state_test = self.env_initial_test_state(data_test[k,0], data_test_booked[k,0],0)
             
             # Reward, price and demand trace for one apt (here the test is for 1 year, 2019 or 2020)
             reward_trace_test = [] # Reward
@@ -245,10 +308,13 @@ class DQN:
     ### Interaction : once trained and tested, use the dqn in real interaction ###
     # Update one step the state, next state = price according to action took & demand that will be get later through customer
     def env_test_step(self, state, action):
-        next_state = np.repeat([[0],[0]],self.T + 1, axis=1)
-        next_state[:,0] = [self.price_grid[action][0], False] #price_grid[action][0] because col 0 = col of price, and demand initialized to False
+        next_state = np.repeat([[0],[0],[0]],self.T + 1, axis=1)
+        print("A",state[0,2])
+        print("b",state[2,0])
+        
+        next_state[:,0] = [self.price_grid[action][0], False,state[2,0]+1] #price_grid[action][0] because col 0 = col of price, and demand initialized to False
         next_state[:, 1:self.T] = state[:, 0:self.T-1]      
-        return next_state
+        return next_state.transpose()
         
 
     # For a given state, compute a price and return it with the actual state
@@ -256,12 +322,13 @@ class DQN:
         self.target_net.eval()
         # Initialize the state
         state_test = initial_state
-        
+        # print(self.to_tensor(state_test).shape)
+        # print(self.to_tensor(state_test))
         # Select and perform an action
         q_values_test = self.target_net(self.to_tensor(state_test))
         action_test = self.policy.select_action_test(q_values_test.detach().numpy())
 
-        next_state_test = self.env_test_step(state_test, action_test)
+        next_state_test = self.env_test_step(state_test.transpose(), action_test)
 
         # Move to the next state
         state_test = next_state_test
@@ -337,7 +404,7 @@ class DQN:
     # Plot the result of test, 
     def plot_result_test(self, data_test, data_test_booked, year):
         # Run the test and get the result
-        seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt = self.dqn_test(data_test, data_test_booked)
+        seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt = self.dqn_test(0.1*data_test, 0.1*data_test_booked)
         cumul_reward_from_algo, cumul_reward_from_data = self.cumul_reward(seq_reward_all_apt, data_test, data_test_booked)
         
         # Plot Price and reward
@@ -345,5 +412,15 @@ class DQN:
         self.plot_reward(cumul_reward_from_algo, cumul_reward_from_data, year)
         
         return seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt
+
+
+def test():
+    
+    dqn=DQN("airbnb_data.csv",0.95,0.001)
+    rt, pt=dqn.dqn_training(60)
         
- 
+    
+
+#test()
+
+
