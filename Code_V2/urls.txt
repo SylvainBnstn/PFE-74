@@ -1672,7 +1672,6 @@ http://data.insideairbnb.com/united-states/ny/new-york-city/2016-04-03/data/list
 http://data.insideairbnb.com/united-states/ny/new-york-city/2016-02-02/data/listings.csv.gz
 http://data.insideairbnb.com/united-states/ny/new-york-city/2016-01-01/data/listings.csv.gz
 http://data.insideairbnb.com/united-states/ny/new-york-city/2015-12-02/data/listings.csv.gz
-http://data.insideairbnb.com/united-states/ny/new-york-city/2015-11-20/data/listings.csv.gz
 http://data.insideairbnb.com/united-states/ny/new-york-city/2015-11-01/data/listings.csv.gz
 http://data.insideairbnb.com/united-states/ny/new-york-city/2015-10-01/data/listings.csv.gz
 http://data.insideairbnb.com/united-states/ny/new-york-city/2015-09-01/data/listings.csv.gz

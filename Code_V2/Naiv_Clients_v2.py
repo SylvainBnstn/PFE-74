@@ -136,7 +136,7 @@ class list_naiv_clients:
         
         return list_sales, temp_envi, temp_real, temp_aban, temp_inst, temp_repou, list_resa, list_resa_scnd
             
-    def update_client(self,prix_min,prix_max,list_to_del,wtp,rate_to_assure,resting_time):
+    def update_client(self,prix_min,prix_max,list_to_del,wtp,rate_to_assure,max_time,resting_time):
         self.del_client(list_to_del)
         
         # print("CList avant",len(self.clients_list))
@@ -152,10 +152,10 @@ class list_naiv_clients:
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
             temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
             temp_wtp = random.random()
-            if 11-resting_time-1 <= 0 :
+            if max_time-resting_time-1 <= 0 :
                 temp_ech = 0
             else:
-                temp_ech = random.randint(0,11-resting_time-1)
+                temp_ech = random.randint(0,max_time-resting_time-1)
             self.clients_list.append(Naiv_client(temp_min,temp_max,temp_wtp,temp_ech))
             
         # print("Chiffre sorti du Q",(len(list_to_del) -aleat))
@@ -164,10 +164,10 @@ class list_naiv_clients:
         for _ in range(len(list_to_del) -aleat):
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
             temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
-            if 11-resting_time-1 <= 0 :
+            if max_time-resting_time-1 <= 0 :
                 temp_ech = 0
             else:
-                temp_ech = random.randint(0,11-resting_time-1)
+                temp_ech = random.randint(0,max_time-resting_time-1)
             self.clients_list.append(Naiv_client(temp_min,temp_max,wtp,temp_ech))
             
         # print("CList après",len(self.clients_list))

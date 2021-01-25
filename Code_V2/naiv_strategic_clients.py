@@ -289,7 +289,7 @@ class list_smart_clients:
         
         return list_sales ,buy_considered, buy_done, buy_dropped, instant_buy, buy_postponed, list_resa, list_resa_scnd
     
-    def update_client(self,prix_min,prix_max,list_to_del,resting_time):
+    def update_client(self,prix_min,prix_max,list_to_del,max_time,resting_time):
         self.del_client(list_to_del)
         
         #on fait les WTP random
@@ -297,10 +297,10 @@ class list_smart_clients:
             temp_min = self.get_min_x_percent(0.2)
             temp_max = self.get_max_x_percent(0.2)
             temp_wtp = rnd.random()
-            if 11-resting_time-1<= 0 :
+            if max_time-resting_time-1<= 0 :
                 temp_ech = 0
             else:
-                temp_ech = rnd.randint(0,11-resting_time-1)
+                temp_ech = rnd.randint(0,max_time-resting_time-1)
             self.clients_list.append(Smart_client(temp_min,temp_max,temp_wtp,temp_ech))
             
 

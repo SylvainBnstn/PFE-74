@@ -113,8 +113,8 @@ class Market:
         
         achat_naiv, achat_strat = self.check_sales_v2( price, (self.df_mean.shape[0]-1), p_trace)
         
-        self.naiv_clients.update_client(self.prix_min, self.prix_min, self.list_del_naiv,self.wtp_to_assure,final_rate,ite)
-        self.strat_clients.update_client(self.prix_min, self.prix_max, self.list_del_strat,ite)
+        self.naiv_clients.update_client(self.prix_min, self.prix_min, self.list_del_naiv,self.wtp_to_assure,final_rate,self.df_mean.shape[0]-1,ite)
+        self.strat_clients.update_client(self.prix_min, self.prix_max, self.list_del_strat,self.df_mean.shape[0]-1,ite)
         
         return achat_naiv, achat_strat
         
@@ -129,15 +129,16 @@ def test():
     df_final=da.review_data(df_start,"new-york-city")
     
     print(df_final.columns)
-
+    
+    nombre_de_mois_test = 12
 
     df_final=df_final.reset_index(drop=True)
-    df_final=df_final.loc[df_final.shape[0]-12:df_final.shape[0]-1]
+    df_final=df_final.loc[df_final.shape[0]-nombre_de_mois_test:df_final.shape[0]-1]
     
     
     #on init le DQN
     dqn=mdqn.DQN("airbnb_data.csv",0.9,0.015)
-    dqn.dqn_training(40)
+    dqn.dqn_training(20)
     
     #on créé le marché
     market=Market(100,200,30,0.8,0.85,0.15,df_start,df_final)
@@ -145,7 +146,7 @@ def test():
     #TEEEEEEEEST
     
     ########
-    state = dqn.env_initial_test_state(150,0)#init price 
+    state = dqn.env_initial_test_state(150,0,1)#init price 
     print("C",state)
     reward_trace = []
     p_trace = [state[0,0]]
@@ -168,8 +169,8 @@ def test():
         achat_naiv, achat_strat = market.updates(p,p_trace,k)
         
         #a corriger
-        state[1,0]=achat_strat + achat_naiv
-        reward=dqn.profit_t_d(state[0,0],state[1,0])
+        state[0,1]=achat_strat + achat_naiv
+        reward=dqn.profit_t_d(state[0,0],state[0,1])
         reward_trace.append(reward)
            
         #retour de la demande 
@@ -186,9 +187,9 @@ def test():
     
     print(reward_trace)
 
-        
-
-        
-        
+    
+    
+     
+       
 test()        
         
