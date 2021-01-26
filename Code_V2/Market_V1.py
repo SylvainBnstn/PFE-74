@@ -138,7 +138,7 @@ def test():
     
     #on init le DQN
     dqn=mdqn.DQN("airbnb_data.csv",0.95,0.015,0.83)
-    return_trace, p_trace =dqn.dqn_training(80)
+    return_trace, p_trace =dqn.dqn_training(40)
     
     dqn.plot_result(return_trace, p_trace)
     
@@ -155,6 +155,10 @@ def test():
     booked=[state[0,1]]
     #############
     
+    list_achat_naiv=[]
+    list_achat_strat=[]
+    vente_tot=[]
+    
     for k in range(df_final.shape[0]):    
         
         #arrivée d'un unique prix 
@@ -169,6 +173,10 @@ def test():
         print(p)
         
         achat_naiv, achat_strat = market.updates(p,p_trace,k)
+        
+        list_achat_naiv.append(achat_naiv)
+        list_achat_strat.append(achat_strat)
+        vente_tot.append(achat_naiv+achat_strat)
         
         #a corriger
         state[0,1]=achat_strat + achat_naiv
@@ -188,10 +196,18 @@ def test():
     print(market.df_glob_sales)
     
     print(reward_trace)
-
+    print(p_trace)
+    print(list_achat_naiv)
+    print(list_achat_strat)
+    print(vente_tot)
     
+    print("CA: ", sum([a*b for a,b in zip( p_trace, vente_tot)]))
+    print("Revenus générés", sum(reward_trace))
     
-     
+    print("Revenus générés par les strats",sum([a*b for a,b in zip( p_trace, list_achat_strat)]))
+    print("Revenus générés par les naif",sum([a*b for a,b in zip( p_trace, list_achat_naiv)]))
+    
+    print("CA avec prix fixe",sum([150*x for x in vente_tot])) 
        
 test()        
         
