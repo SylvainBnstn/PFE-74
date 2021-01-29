@@ -8,9 +8,13 @@ Created on Tue Dec  8 13:29:46 2020
 import Naiv_Clients_v2 as cnt
 import data_analysis as da
 import airbnb_processing as ap
-import Model_DQN_VF as mdqn
 import naiv_strategic_clients as nsc
 
+import matplotlib.pyplot as plt
+
+import statistics as st
+
+import copy
 
 import random as rd
 import pandas as pd
@@ -106,7 +110,7 @@ class Market:
     
     def updates(self,price,p_trace,ite):
         
-        avail_rate=self.df_mean.loc[self.df_mean.index[ite],"mean_availability_30"] / 30 
+        avail_rate=self.df_mean.loc[self.df_mean.index[ite],"mean_booked_30"] / 30 
         final_rate=avail_rate+0.05
         
         # self.list_del_naiv, self.list_resa_naiv, self.list_del_strat, self.list_resa_strat, achat_naiv, achat_strat = self.check_sales(price,self.naiv_clients,self.list_resa_naiv,self.strat_clients,self.list_resa_strat,(self.df_mean.shape[0]-1),p_trace)
@@ -119,95 +123,3 @@ class Market:
         return achat_naiv, achat_strat
         
 
-
-def test():
-    
-    ###################################
-    
-    df_start=ap.load_data("airbnb_data.csv")
-    df_start=df_start.loc[(df_start["room_type"]=="Entire home/apt") & (df_start["price"]>=100) & (df_start["price"]<=200)]
-    df_final=da.review_data(df_start,"new-york-city")
-    
-    print(df_final.columns)
-    
-    nombre_de_mois_test = 12
-
-    df_final=df_final.reset_index(drop=True)
-    df_final=df_final.loc[df_final.shape[0]-nombre_de_mois_test:df_final.shape[0]-1]
-    
-    
-    #on init le DQN
-    dqn=mdqn.DQN("airbnb_data.csv",0.95,0.015,0.83)
-    return_trace, p_trace =dqn.dqn_training(40)
-    
-    dqn.plot_result(return_trace, p_trace)
-    
-    #on créé le marché
-    market=Market(100,200,30,0.8,0.85,0.15,df_start,df_final)
-    
-    #TEEEEEEEEST
-    
-    ########
-    state = dqn.env_initial_test_state(150,0,1)#init price 
-    print("C",state)
-    reward_trace = []
-    p_trace = [state[0,0]]
-    booked=[state[0,1]]
-    #############
-    
-    list_achat_naiv=[]
-    list_achat_strat=[]
-    vente_tot=[]
-    
-    for k in range(df_final.shape[0]):    
-        
-        #arrivée d'un unique prix 
-        
-        ########## Remplacer par un aleat compris entre 50 et 250
-        p, state= dqn.dqn_interaction(state)
-
-        p_trace.append(p)
-        
-        #########
-        
-        print(p)
-        
-        achat_naiv, achat_strat = market.updates(p,p_trace,k)
-        
-        list_achat_naiv.append(achat_naiv)
-        list_achat_strat.append(achat_strat)
-        vente_tot.append(achat_naiv+achat_strat)
-        
-        #a corriger
-        state[0,1]=achat_strat + achat_naiv
-        reward=dqn.profit_t_d(state[0,0],state[0,1])
-        reward_trace.append(reward)
-           
-        #retour de la demande 
-    
-    print(df_final)
-    print(market.list_resa_naiv_final)    
-    print(market.df_naiv_sales)
-    
-    print(market.list_resa_strat_final)    
-    print(market.df_strat_sales)
-    
-    print(market.list_resa_glob_final)    
-    print(market.df_glob_sales)
-    
-    print(reward_trace)
-    print(p_trace)
-    print(list_achat_naiv)
-    print(list_achat_strat)
-    print(vente_tot)
-    
-    print("CA: ", sum([a*b for a,b in zip( p_trace, vente_tot)]))
-    print("Revenus générés", sum(reward_trace))
-    
-    print("Revenus générés par les strats",sum([a*b for a,b in zip( p_trace, list_achat_strat)]))
-    print("Revenus générés par les naif",sum([a*b for a,b in zip( p_trace, list_achat_naiv)]))
-    
-    print("CA avec prix fixe",sum([150*x for x in vente_tot])) 
-       
-test()        
-        

@@ -103,18 +103,24 @@ class list_smart_clients:
         pas_price = round(0.5/range_price, 3)       #0.005
         pas_echeance = round(0.5/max_echeance, 3) #0.045
 
-        # Boucle de détermination wtp du paramètre price
-        for i in range(range_price):
-            if(price == int(self.clients_list[current_client].prix_max - i)):
-                wtp_price = pas_price * i
+        
         # Limite de détermination wtp du paramètre price
         if(price <= self.clients_list[current_client].prix_min):
             wtp_price = 0.5
-        elif(price > self.clients_list[current_client].prix_max):
+        elif(price >= self.clients_list[current_client].prix_max):
+
             wtp_price = 0 #pas_price * 100
+            
+        else :
+            # Boucle de détermination wtp du paramètre price
+
+            for i in range(range_price+1):
+
+                if(price == int(self.clients_list[current_client].prix_max - i)+1):
+
+                    wtp_price = (pas_price * i)
 
         # Boucle de détermination wtp du paramètre echeance
-        
         
         for i in range(max_echeance):
             if(self.clients_list[current_client].echeance == (max_echeance - i)):
@@ -176,8 +182,8 @@ class list_smart_clients:
         # Boucle de parcours pour l'actualisation
         for i in range(len(self.clients_list)):
            
-            self.clients_list[i].prix_min = new_min
-            self.clients_list[i].prix_max = new_max 
+            self.clients_list[i].prix_min = int(new_min)
+            self.clients_list[i].prix_max = int(new_max) 
             wtp = self.wtp_actualisation(price, max_echeance,i)
             self.clients_list[i].will_to_pay = wtp
 
@@ -185,7 +191,7 @@ class list_smart_clients:
 
     def check_sales(self, price, max_echeance, price_trace, list_resa, list_resa_scnd):
         
-        print(self.clients_list)
+        # print(self.clients_list)
         
         self.update_min_max(price,max_echeance)
         

@@ -15,26 +15,31 @@ import Import_data_VF
 
 
 class DQN:
-    def __init__(self, path, gamma ,learn_rate, train_proportion):
+    def __init__(self, path, gamma ,learn_rate, train_proportion, strat_min_prop, step_prop):
         # Import des variables et fonctions 
         # df_price & df_booked all date
-        self.price, self.booked,self.proportion= Import_data_VF.get_data(train_proportion,path)
+        # self.price, self.booked,self.proportion= Import_data_VF.get_data(train_proportion,path)
+        
+        
         
         ### state 
-        self.price_grid = Import_data_VF.training_data(self.price, self.booked,self.proportion)
-        
-        self.data_test_2019 = Import_data_VF.testing_data_2019(self.price, self.booked)[0].to_numpy()
-        self.data_test_booked_2019 = Import_data_VF.testing_data_2019(self.price, self.booked)[1].to_numpy()
-        self.data_test_2020 = Import_data_VF.testing_data_2020(self.price, self.booked)[0].to_numpy()
-        self.data_test_booked_2020 = Import_data_VF.testing_data_2020(self.price, self.booked)[1].to_numpy()
-        
+        # self.price_grid = Import_data_VF.training_data(self.price, self.booked,self.proportion)
+        self.price_grid , self.price_grid_test , self.proportion = Import_data_VF.load_data(path,train_proportion,strat_min_prop, step_prop)
         self.state_dim = len(self.price_grid[0])
+
+
+        
+        # self.data_test_2019 = Import_data_VF.testing_data_2019(self.price, self.booked)[0].to_numpy()
+        # self.data_test_booked_2019 = Import_data_VF.testing_data_2019(self.price, self.booked)[1].to_numpy()
+        # self.data_test_2020 = Import_data_VF.testing_data_2020(self.price, self.booked)[0].to_numpy()
+        # self.data_test_booked_2020 = Import_data_VF.testing_data_2020(self.price, self.booked)[1].to_numpy()
         
         
-        self.unit_cost = 50
         
-        self.T = self.proportion # 12mois
         
+        self.unit_cost = 70
+        
+        self.T = max(self.price_grid[:,2])# 12mois
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
@@ -136,20 +141,20 @@ class DQN:
     
     # Initizalize the state of shape (2xstate_dim) : state = (price, demand) * state_dim
     def env_initial_state(self):
-        state = np.repeat([[0],[0],[0]],self.T, axis=1)
-        return state.transpose()
+        state = np.zeros((self.T,self.state_dim))
+        return state
     
     # Update one step ahead the state, next state = (price, demand) according the action took
     def env_step(self, state, action):
-        next_state = np.repeat([[0],[0],[0]],self.T, axis=1)
+        next_state = np.zeros((self.T,self.state_dim))
         
-        next_state[:,0] = [self.price_grid[action][0],self.price_grid[action][1],self.price_grid[action][2]]# Price & demand
+        next_state[0,:] = [self.price_grid[action][0],self.price_grid[action][1],self.price_grid[action][2]]# Price & demand
         #next_state[:,0] = self.price_grid[action][0:3:2] #get the price & the demand col 0 to col 2 by step 2
-        next_state[:, 1:self.T] = state[:, 0:self.T-1]
+        next_state[ 1:self.T , :] = state[0:self.T-1 , :]
         
-        demand_ = self.demand(next_state[0,0],next_state[2,0])
+        demand_ = self.demand(next_state[0,0],next_state[0,2])
         reward = self.profit_t_d(next_state[0,0], demand_)
-        return next_state.transpose(), reward, demand_
+        return next_state, reward, demand_
     
     # Compute the profit given a price and a demand
     def profit_t_d(self, p_t, demand):
@@ -157,7 +162,7 @@ class DQN:
         share_cost = 0.03*(p_t*demand + self.unit_cost)
         unique_cost = 0.14*(p_t*demand + self.unit_cost)
         tot_cost = share_cost + unique_cost
-        return p_t*demand - tot_cost
+        return p_t*np.exp(demand) - tot_cost
     
     # Get back the demand for a given variation of price
     def demand(self, pt, date):
@@ -195,7 +200,7 @@ class DQN:
         # Train num_episodes times
         for i_episode in range(num_episodes):
             state = self.env_initial_state()
-            print("---",i_episode)
+            # print("---",i_episode)
             #state = state.transpose()
             reward_trace = []
             p = []
@@ -207,7 +212,8 @@ class DQN:
                   q_values = self.policy_net(self.to_tensor(state))
                 action = self.policy.select_action(q_values.detach().numpy())
 
-                next_state, reward, _ = self.env_step(state.transpose(), action)
+                next_state, reward, _ = self.env_step(state, action)
+                next_state[0,2]=t+1
                 #next_state=next_state.transpose()
                 
                 # print("C",next_state)
@@ -243,29 +249,29 @@ class DQN:
     ### Test ###
     # Initizalize the state of shape (2xstate_dim): state = (price & demand) * state_dim
     def env_initial_test_state(self,price, booked,date):
-        state = np.repeat([[0],[0],[0]],self.T + 1, axis=1)
-        state[:,0] = [price, booked,date]
-        print("ccc",state[:,0])
-        return state.transpose()
+        state = np.zeros((self.T,self.state_dim))
+        state[0,:] = [price, booked,date]
+        # print("ccc",state[:,0])
+        return state
     
     # Test
-    def dqn_test(self, data_test, data_test_booked):
+    def dqn_test(self, price_grid_test):
         # Initialization sequences of price, reward and demand for each apt
         seq_price_all_apt=[]
         seq_reward_all_apt=[]
         seq_booked_all_apt=[]
         
         # Go through each apt
-        for k in range(len(data_test)):
+        for k in range(len(price_grid_test)):
             
-            state_test = self.env_initial_test_state(data_test[k,0], data_test_booked[k,0],0)
+            state_test = self.env_initial_test_state(150, 0,1)
             
             # Reward, price and demand trace for one apt (here the test is for 1 year, 2019 or 2020)
             reward_trace_test = [] # Reward
             p_test = [state_test[0,0]] # Price
             booked_test = [state_test[1,0]] # Demand
        
-            for t in range(len(data_test[0])): # Compute price for the period (here 1 year)
+            for t in range(len(price_grid_test[0])): # Compute price for the period (here 1 year)
                 # Select and perform an action
                 q_values_test = self.target_net(self.to_tensor(state_test))
                 action_test = self.policy.select_action_test(q_values_test.detach().numpy())
@@ -310,13 +316,13 @@ class DQN:
     ### Interaction : once trained and tested, use the dqn in real interaction ###
     # Update one step the state, next state = price according to action took & demand that will be get later through customer
     def env_test_step(self, state, action):
-        next_state = np.repeat([[0],[0],[0]],self.T + 1, axis=1)
-        print("A",state[0,2])
-        print("b",state[2,0])
+        next_state = np.zeros((self.T,self.state_dim))
+        # print("A",state[0,2])
+        # print("b",state[2,0])
         
-        next_state[:,0] = [self.price_grid[action][0], False,state[2,0]+1] #price_grid[action][0] because col 0 = col of price, and demand initialized to False
-        next_state[:, 1:self.T] = state[:, 0:self.T-1]      
-        return next_state.transpose()
+        next_state[0,:] = [self.price_grid[action][0], False,state[0,2]+1] #price_grid[action][0] because col 0 = col of price, and demand initialized to False
+        next_state[1:self.T,:] = state[0:self.T-1,:]      
+        return next_state
         
 
     # For a given state, compute a price and return it with the actual state
@@ -330,7 +336,7 @@ class DQN:
         q_values_test = self.target_net(self.to_tensor(state_test))
         action_test = self.policy.select_action_test(q_values_test.detach().numpy())
 
-        next_state_test = self.env_test_step(state_test.transpose(), action_test)
+        next_state_test = self.env_test_step(state_test, action_test)
 
         # Move to the next state
         state_test = next_state_test

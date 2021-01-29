@@ -4,7 +4,7 @@ import numpy as np
 class EpsilonGreedyPolicy:
     ###########################################################################
     # initialize epsilon parameters
-    def __init__(self, eps_start=0.9, eps_end=0.05, eps_decay=400):
+    def __init__(self, eps_start=0.99, eps_end=0.01, eps_decay=1000):
         self.eps_start = eps_start
         self.eps_end = eps_end
         self.decay = eps_decay
@@ -15,8 +15,7 @@ class EpsilonGreedyPolicy:
     # choose action via exploration/exploitation (eps-greedy strategy)
     def select_action(self, q_values):
         rdm = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) \
-        * np.exp(- 1. * self.steps_done / self.decay)
+        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * np.exp(- 1. * self.steps_done / self.decay)
         self.steps_done += 1
         if rdm > eps_threshold:         # exploitation
             return np.argmax(q_values)

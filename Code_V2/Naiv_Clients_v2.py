@@ -35,7 +35,7 @@ class list_naiv_clients:
         self.nb_client = nb_client
         self.clients_list=[]
         aleat = int((1-rate_to_assure)*nb_client)
-        print (aleat)
+
         for _ in range(aleat):
             temp_min = random.uniform(prix_min,prix_min+(prix_max-prix_min)/2)
             temp_max = random.uniform(prix_min+(prix_max-prix_min)/2,prix_max)
@@ -57,7 +57,7 @@ class list_naiv_clients:
             del self.clients_list[index]
             
     def check_sales(self,price, list_resa, list_resa_scnd):
-        print(self.clients_list)
+        # print(self.clients_list)
         
         temp_envi = temp_real = temp_aban = temp_inst = temp_repou = temp_obli = temp_comp = 0
         

@@ -12,16 +12,18 @@ import matplotlib.pyplot as plt
 import numpy as np
     
 #fonction de multiplot par type de chambre
-def multiplot_by_roomtype(df,y_data_name,y_label):
-    plt.figure(figsize=(20, 15))
+def multiplot_by_roomtype(df,y_data_name,y_label,y_max):
+    plt.figure(figsize=(6, 4))
     #liste des types de chambres dont on dispose
-    room_type_list = list(df["room_type"].unique())
+    # room_type_list = list(df["room_type"].unique())
+    room_type_list = ["Entire home/apt","Private room","Shared room"]
     #parcours
     for i in range(len(room_type_list)):
         #plot
         plt.plot("date",y_data_name, data = df[df["room_type"] == room_type_list[i]], label = room_type_list[i])
     #label et legende
     plt.ylabel(y_label)
+    plt.ylim((0,y_max))
     plt.legend()
     plt.grid()
     
@@ -58,8 +60,8 @@ def get_trend_on_scatter(df,y_data_name,y_label):
 #fonction d'ajustement des données
 def review_data(df_all,city):
     #première df avec les moyennes de prix et de dispo
-    result_1 = df_all[df_all["city"] == city].groupby(["date","room_type"], as_index = False).agg({"price" : ["mean"], "availability_30" : ["mean"]})
-    result_1.columns = ["date","room_type","mean_price", "mean_availability_30"]
+    result_1 = df_all[df_all["city"] == city].groupby(["date","room_type"], as_index = False).agg({"price" : ["mean"], "booked" : ["mean"]})
+    result_1.columns = ["date","room_type","mean_price", "mean_booked_30"]
     #nombre de room par types disponible à l'instant 
     room_count =  df_all[df_all["city"] == city].groupby(["date","room_type"], as_index = False).size()
     room_count = room_count.to_frame()
@@ -74,10 +76,11 @@ def test():
     df_final=review_data(df_start,"new-york-city")
     print(df_start.columns)
     
-    multiplot_by_roomtype(df_final,"mean_price","Prix Moyen")
-    multiplot_by_roomtype(df_final,"mean_availability_30","Dispo Moyen")
-    multiplot_by_roomtype(df_final,"number_of_hosts","Nombre de dispo")
+    multiplot_by_roomtype(df_final,"mean_price","Prix Moyen",250)
+    multiplot_by_roomtype(df_final,"mean_availability_30","Dispo Moyen",30)
+    multiplot_by_roomtype(df_final,"number_of_hosts","Nombre de dispo",30000)
     
     plot_by_squarefeet(df_start.loc[df_start["city"]=="new-york-city"])
     get_trend_on_scatter(df_start.loc[df_start["city"]=="new-york-city"],"a","a")
     print(df_start.loc[df_start["city"]=="new-york-city"].head())
+

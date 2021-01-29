@@ -1,9 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import Market_V1 as mkt
+import random as rd
+
+import data_analysis as da
+import airbnb_processing as ap
 
 
-def get_proportion(df_p,df_b,b,proportion):
+def get_proportion(b,proportion):
     
     return int(b*proportion)
 
@@ -42,7 +47,7 @@ def get_data(train_proportion,file_name = "airbnb_data.csv"):
     
     booked_with_all_date=booked_with_all_date.loc[booked_with_all_date.index.isin(list_id)]
     
-    proportion = get_proportion(data_with_all_date,booked_with_all_date,b,train_proportion)
+    proportion = get_proportion(b,train_proportion)
     
     return data_with_all_date, booked_with_all_date,proportion
 
@@ -82,6 +87,68 @@ def training_data(df_price, df_booked,proportion):
     return all_price_grid
     
 #df = training_data(df_p, df_b)
+    
+def create_data(nb_mois_test):
+    df_start=ap.load_data("airbnb_data.csv")
+    df_start=df_start.loc[(df_start["room_type"]=="Entire home/apt") & (df_start["price"]>=100) & (df_start["price"]<=200)]
+    df_final=da.review_data(df_start,"new-york-city")
+    
+    nombre_de_mois_test = nb_mois_test
+
+    df_final=df_final.reset_index(drop=True)
+    df_final=df_final.loc[df_final.shape[0]-nombre_de_mois_test:df_final.shape[0]-1]
+    
+    df_glob_sales = pd.DataFrame(columns= ["Prix","Achat_Tot","Date","Part_Strat"])
+    
+        
+    
+    #parcours de prix 
+    for n in range (160):
+        
+        print(n, "% effectués")
+        
+        #parcours de proportion
+        for i in range(100):
+            
+            #on créé le marché
+            market=mkt.Market(100,200,30,1-(i/100),0.85,0.15,df_start,df_final)
+            
+            p_trace=[rd.randrange(70,230)]
+            
+            #parcours de date
+            for k in range(df_final.shape[0]):    
+                
+                p = rd.randrange(70,230)
+        
+                p_trace.append(p)
+                
+
+                
+                achat_naiv, achat_strat = market.updates(p,p_trace,k)
+                
+                
+                df_glob_sales = df_glob_sales.append({"Prix":p,"Achat_Tot":(achat_naiv+achat_strat),"Date":k+1,"Part_Strat":(i/100)},ignore_index=True)
+                    
+                    
+    print(df_glob_sales)
+    
+    df_glob_sales.to_csv("Data_Model.csv",index=False)
+    
+def load_data(path, train_proportion ,strat_min_prop, step_prop):
+    df= pd.read_csv(path)
+    df = df.loc[(df["Part_Strat"]>=strat_min_prop) & (df["Part_Strat"]<strat_min_prop+step_prop)]
+    df=df.drop(columns=["Part_Strat"])
+    price_grid_temp = df.to_numpy()
+    price_grid_temp=price_grid_temp[:,:].astype(int)
+    
+
+    proportion = get_proportion(len(price_grid_temp),train_proportion)
+    price_grid_test = price_grid_temp [proportion:len(price_grid_temp),:]
+    price_grid = price_grid_temp[0:proportion,:]
+    
+    return price_grid, price_grid_test ,proportion
+               
+
 
 def testing_data(df_price, df_booked,proportion):
     # Get test data of 2020
@@ -115,7 +182,7 @@ def testing_data_2020(df_price, df_booked):
 #dt20 , dtb20 =testing_data_2020(df_p, df_b)
 
 
+# create_data(12)
 
-
-
+# load_data("Data_Model.csv",0.83,0, 0.1)
     
