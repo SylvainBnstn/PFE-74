@@ -27,6 +27,7 @@ def multiplot_by_roomtype(df,y_data_name,y_label,y_max):
     plt.legend()
     plt.grid()
     
+#fonction de multiplot par square feet
 def plot_by_squarefeet(df):
     room_type_list = list(df["room_type"].unique())
     sqf_price = df[df["square_feet"].isna() == False]
@@ -41,6 +42,7 @@ def plot_by_squarefeet(df):
     plt.grid()
     plt.show()
     
+#fonction d'affichage de la trend de la relation prix / surface
 def get_trend_on_scatter(df,y_data_name,y_label):
     sqf_price = df.loc[(df["square_feet"].isna() == False) & (df["square_feet"] > 10) & (df["price"] > 0)]
     plt.figure(figsize=(20, 10))
@@ -71,16 +73,16 @@ def review_data(df_all,city):
     df_result["date"]=pd.to_datetime(df_result["date"])
     return df_result
 
+#fonction de test
 def test():
     df_start=ap.load_data("airbnb_data.csv")
     df_final=review_data(df_start,"new-york-city")
     print(df_start.columns)
     
     multiplot_by_roomtype(df_final,"mean_price","Prix Moyen",250)
-    multiplot_by_roomtype(df_final,"mean_availability_30","Dispo Moyen",30)
+    # multiplot_by_roomtype(df_final,"mean_availability_30","Dispo Moyen",30)
     multiplot_by_roomtype(df_final,"number_of_hosts","Nombre de dispo",30000)
     
     plot_by_squarefeet(df_start.loc[df_start["city"]=="new-york-city"])
     get_trend_on_scatter(df_start.loc[df_start["city"]=="new-york-city"],"a","a")
     print(df_start.loc[df_start["city"]=="new-york-city"].head())
-

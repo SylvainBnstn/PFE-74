@@ -3,6 +3,7 @@
 import pandas as pd
 from math import nan
 
+#fonction qui récupère les urls dans le .txt correspondant
 def get_url_list(path):
     url_file=open(path,"r")
     lines = url_file.readlines()
@@ -11,6 +12,7 @@ def get_url_list(path):
         list_urls.append(line.strip())
     return list_urls
 
+#fonction qui isole les urls des villes contenus dans la list_city
 def isolate_expected_urls(url_list,list_city):
     final_url=[]
     for k in range(len(list_city)):
@@ -20,6 +22,7 @@ def isolate_expected_urls(url_list,list_city):
                 final_url.append(url_list[i])
     return final_url
     
+# fonction qui récupère les données des urls de la url_list
 def get_data(url_list,expected_path, list_city):
     
     #creation de la liste des df
@@ -29,6 +32,7 @@ def get_data(url_list,expected_path, list_city):
 
     missed_col =  ['square_feet','cleaning_fee']
     
+    #on charge la liste d'url que l'on souhaite
     url_list = isolate_expected_urls(url_list, list_city)
     
     #boucle de parcours de chacun des liens
@@ -41,6 +45,7 @@ def get_data(url_list,expected_path, list_city):
         #on ne conserve que les colonnes interessantes
         df = df_init[column_names]
         
+        #mise au point sur les colonnes qui posent ds problème de nan
         for j in range(len(missed_col)):
             if (missed_col[j] in list(df_init.columns)):
                 df[missed_col[j]] = df_init[missed_col[j]]
@@ -85,6 +90,9 @@ def load_data(path):
     df=pd.read_csv(path)
     print("\n°°°°° Chargement reussi! °°°°°")
     return df
+
+
+#lignes à décommenter pour charger un nouveau set de données
 
 # URLS=get_url_list("urls.txt")
 # get_data(URLS,"airbnb_data.csv",["new-york-city"])
