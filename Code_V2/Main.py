@@ -13,6 +13,8 @@ import Model_DQN_VF as mdqn
 import naiv_strategic_clients as nsc
 import Market_V1 as mkt
 
+import numpy as np
+
 import matplotlib.pyplot as plt
 
 import statistics as st
@@ -34,7 +36,7 @@ def find_cst_p_better_than_dqn(vente_tot, CA_dqn):
             #print("CA avec prix fixe > CA avec prix variable (dqn), pour le prix cst : ", cst_price)
 
 
-def test():
+def test(nb_episode, learn_rate,nb_part,batch_size):
     
     ###################################
     
@@ -47,28 +49,28 @@ def test():
     df_final=df_final.reset_index(drop=True)
     df_final=df_final.loc[df_final.shape[0]-nombre_de_mois_test:df_final.shape[0]-1]
     
-    number_of_part=10
+    number_of_part= nb_part
     steps=100/number_of_part
     
     
     
-    df_result= pd.DataFrame(columns= ["Ite","Prix Moyen DQN","Prix_Min","Prix_Max","Nb_V_Naif","Nb_V_Strat","CA_Tot","Rev_Tot","Rev_Naif","Rev_Strat","CA_tampon","Prix_tampon", 'Rev_Naif_tampon', 'Rev_Strat_tampon',"CA_Market_DQN","CA_Market_Temoin"])
+    df_result= pd.DataFrame(columns= ["Ite","Prix Moyen DQN","Prix_Min","Prix_Max","Liste_Prix","Nb_V_Naif","Nb_V_Strat","CA_Tot","Rev_Tot","Rev_Naif","Rev_Strat","CA_tampon","Prix_tampon", 'Rev_Naif_tampon', 'Rev_Strat_tampon',"CA_Market_DQN","CA_Market_Temoin"])
     
    
         
     for n in range(number_of_part):
         print("Part ",n) 
         #on init le DQN
-        dqn=mdqn.DQN("Data_Model.csv",0.9,0.7,0.83,(n*steps)/100,((n+1)*steps)/100)
-        return_trace, p_trace = dqn.dqn_training(600)
+        dqn=mdqn.DQN("Data_Model_2.csv",0.9,learn_rate,0.83,(n*steps)/100,((n+1)*steps)/100,batch_size)
+        return_trace, p_trace = dqn.dqn_training(nb_episode)
 
         dqn.plot_result(return_trace, p_trace)
         
-        
+        list_p_trace=[]
         
         for j in range(1):
     
-            df_temp= pd.DataFrame(columns= ["Ite","Prix Moyen DQN","Prix_Min","Prix_Max","Nb_V_Naif","Nb_V_Strat","CA_Tot","Rev_Tot","Rev_Naif","Rev_Strat","CA_tampon","Prix_tampon", 'Rev_Naif_tampon', 'Rev_Strat_tampon',"CA_Market_DQN","CA_Market_Temoin"])
+            df_temp= pd.DataFrame(columns= ["Ite","Prix Moyen DQN","Prix_Min","Prix_Max","Liste_Prix","Nb_V_Naif","Nb_V_Strat","CA_Tot","Rev_Tot","Rev_Naif","Rev_Strat","CA_tampon","Prix_tampon", 'Rev_Naif_tampon', 'Rev_Strat_tampon',"CA_Market_DQN","CA_Market_Temoin"])
             
             print("Ite",j)
         
@@ -130,7 +132,7 @@ def test():
                 # print(market.df_glob_sales)
                 
                 # print(reward_trace)
-                # print(p_trace)
+                list_p_trace.append(p_trace)
                 # print(list_achat_naiv)
                 # print(list_achat_strat)
                 # print(vente_tot)
@@ -146,6 +148,7 @@ def test():
                 # price_tampon = find_cst_p_better_than_dqn(vente_tot, sum([a*b for a,b in zip( p_trace, vente_tot)]))
                 
                 price_tampon = int(sum(p_trace)/len(p_trace))
+                
                 p_trace_tampon = [price_tampon]
             
                 
@@ -154,6 +157,7 @@ def test():
                 vente_tot_tampon=[]
                 
                 for k in range(df_final.shape[0]):    
+                    
                     price_tampon =rd.randrange(130,170)
                     p_trace_tampon.append(price_tampon)
                     
@@ -172,6 +176,7 @@ def test():
                                     int(sum(p_trace)/len(p_trace)),
                                     min(p_trace),
                                     max(p_trace),
+                                    p_trace,
                                     sum(list_achat_naiv),
                                     sum(list_achat_strat),
                                     sum([a*b for a,b in zip( p_trace, vente_tot)]),
@@ -185,7 +190,7 @@ def test():
                                     sum([a*b for a,b in zip( p_trace, df_final["mean_booked_30"].tolist())]),
                                     sum([a*b for a,b in zip( p_trace_tampon, df_final["mean_booked_30"].tolist())])]
             
-        
+        plot_ptrace(list_p_trace)
         df_result = pd.concat([df_result,df_temp])
     
     print(df_result)
@@ -210,7 +215,20 @@ def revenue_plot(df):
     #label et legende
     plt.xlabel("Parts de Client Strategiques dans le marché (%)")
     plt.ylabel("CA ($)")
-    plt.title("Comparaison CA DQN/Aleat avec la demande simulee")
+    plt.title("Comparaison CA DQN/Aleat avec la demande simulee ")
+    plt.legend()
+    plt.grid()
+    
+def plot_ptrace(list_toplot):
+    plt.figure(figsize=(14, 8))
+    mois = np.arange(0, 13, 1)
+
+    for i in range(len(list_toplot)):
+        #plot
+        plt.plot(mois,list_toplot[i], color="k" ,alpha = 0.1)
+    #label et legende
+    plt.xlabel("Mois")
+    plt.ylabel("Prix (USD)")
     plt.legend()
     plt.grid()
     
@@ -228,6 +246,15 @@ def revenue_plot_fixe(df):
     plt.xlabel("Parts de Strategiques")
     plt.ylabel("CA ($)")
     plt.title("Comparaison Prix DQN/Fixe avec la demande observee")
+    plt.legend()
+    plt.grid()
+    
+def plot_diff(df):
+    plt.figure(figsize=(14, 8))
+    plt.plot("Ite","Diff_CA","b-",data = df)
+    plt.ylabel("Différence de CA ($)")
+    plt.xlabel("Parts de Strategiques")
+    plt.title("Différence CA tot DQN/Aleat : Moyenne = " + str(df["Diff_CA"].mean()) + "$")
     plt.legend()
     plt.grid()
     
@@ -251,11 +278,16 @@ def revenue_plot2():
         "CA_Market_DQN": ["mean"],
         "CA_Market_Temoin": ["mean"]})
     df.columns = ['Ite', 'Prix Moyen DQN', 'Prix_Min', 'Prix_Max', 'Nb_V_Naif','Nb_V_Strat', 'CA_Tot', 'Rev_Tot', 'Rev_Naif', 'Rev_Strat','CA_tampon','Prix_tampon', 'Rev_Naif_tampon', 'Rev_Strat_tampon',"CA_Market_DQN","CA_Market_Temoin"]
-    revenue_plot(df)
-    revenue_plot_fixe(df)
+    df["Diff_CA"] = df["CA_Tot"] - df["CA_tampon"]
+
     df.to_excel("Evol_Strat_Mean.xlsx",index=False)
     print(df.tail(10))
-    
-    
-# test()        
-revenue_plot2()
+    revenue_plot(df)
+    # revenue_plot_fixe(df)
+    plot_diff(df)
+    return df["Diff_CA"].mean()
+
+
+# test(500,0.01,5,128)        
+mean_perf = revenue_plot2()
+print(mean_perf)

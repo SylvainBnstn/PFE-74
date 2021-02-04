@@ -1,21 +1,26 @@
 from Model_DQN_VF import DQN
 
-dqn = DQN("airbnb_data.csv",0.95,0.001)
+dqn = DQN("Data_Model_2.csv",0.9,0.5,0.83,1/10,2/10)
 
 
 def execute_train():
-    return_trace, p_trace = dqn.dqn_training(40)
+    return_trace, p_trace = dqn.dqn_training(200)
     dqn.plot_result(return_trace, p_trace)
     return return_trace, p_trace
     
 def execute_test():
-    seq_reward_all_apt19, seq_price_all_apt19, seq_booked_all_apt19 = dqn.plot_result_test(dqn.data_test_2019, dqn.data_test_booked_2019, "2019")
-    seq_reward_all_apt20, seq_price_all_apt20, seq_booked_all_apt20 = dqn.plot_result_test(dqn.data_test_2020, dqn.data_test_booked_2020, "2020")
-    #dqn.plot_mean()
-    return seq_reward_all_apt19, seq_price_all_apt19, seq_booked_all_apt19, seq_reward_all_apt20, seq_price_all_apt20, seq_booked_all_apt20
+    #seq_reward_all_apt19, seq_price_all_apt19, seq_booked_all_apt19 = dqn.plot_result_test(dqn.data_test_2019, dqn.data_test_booked_2019, "2019")
+    #seq_reward_all_apt20, seq_price_all_apt20, seq_booked_all_apt20 = dqn.plot_result_test(dqn.data_test_2020, dqn.data_test_booked_2020, "2020")
     
-    
-    
+    #dqn.dqn_test(dqn.price_grid_test)
+    #return seq_reward_all_apt19, seq_price_all_apt19, seq_booked_all_apt19, seq_reward_all_apt20, seq_price_all_apt20, seq_booked_all_apt20
+    seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt, reward_from_data = dqn.plot_result_test(dqn.price_grid_test)
+    return seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt, reward_from_data
+
+rt , pt = execute_train()
+seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt, reward_from_data = execute_test()
+
+"""
 # this function replace the demand of the customer
 def get_booked(price):
     import random
@@ -42,7 +47,6 @@ def execute_interaction():
     print("REWARD: ", reward_trace)
     print("BOOKED: ", booked)
     return p_trace, reward_trace
-
-rt , pt = execute_train()
-seq_reward_all_apt19, seq_price_all_apt19, seq_booked_all_apt19, seq_reward_all_apt20, seq_price_all_apt20, seq_booked_all_apt20 = execute_test()
+"""
+#seq_reward_all_apt19, seq_price_all_apt19, seq_booked_all_apt19, seq_reward_all_apt20, seq_price_all_apt20, seq_booked_all_apt20 = execute_test()
 #execute_interaction()

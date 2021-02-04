@@ -15,7 +15,7 @@ import Import_data_VF
 
 
 class DQN:
-    def __init__(self, path, gamma ,learn_rate, train_proportion, strat_min_prop, step_prop):
+    def __init__(self, path, gamma ,learn_rate, train_proportion, strat_min_prop, step_prop, batch_size):
         # Import des variables et fonctions 
         # df_price & df_booked all date
         # self.price, self.booked,self.proportion= Import_data_VF.get_data(train_proportion,path)
@@ -51,7 +51,7 @@ class DQN:
         
         self.TARGET_UPDATE = 20
         self.GAMMA = gamma
-        self.BATCH_SIZE = 32
+        self.BATCH_SIZE = batch_size
         
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr = learn_rate)
 
@@ -127,7 +127,7 @@ class DQN:
         expected_state_action_values = reward_batch[:, 0] + (self.GAMMA * next_state_values)
     
         # Compute Huber loss
-        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1).unsqueeze(1))
         
         # Optimize the model
         self.optimizer.zero_grad()
@@ -254,44 +254,66 @@ class DQN:
         # print("ccc",state[:,0])
         return state
     
+        # Compute the profit given a price and a demand
+    def profit_t_d_test(self, p_t, demand):
+        # Compute the total cost took by Airbnb platform
+        share_cost = 0.03*(p_t*demand + self.unit_cost)
+        unique_cost = 0.14*(p_t*demand + self.unit_cost)
+        tot_cost = share_cost + unique_cost
+        return p_t*demand - tot_cost
+    
+    def env_step_test(self, state, action):
+        next_state = np.zeros((self.T,self.state_dim))
+        
+        next_state[0,:] = [self.price_grid[action][0],self.price_grid[action][1],self.price_grid[action][2]]# Price & demand
+        #next_state[:,0] = self.price_grid[action][0:3:2] #get the price & the demand col 0 to col 2 by step 2
+        next_state[ 1:self.T , :] = state[0:self.T-1 , :]
+        
+        demand_ = self.demand(next_state[0,0],next_state[0,2])
+        reward = self.profit_t_d_test(next_state[0,0], demand_)
+        return next_state, reward, demand_
+    
     # Test
     def dqn_test(self, price_grid_test):
-        # Initialization sequences of price, reward and demand for each apt
-        seq_price_all_apt=[]
-        seq_reward_all_apt=[]
-        seq_booked_all_apt=[]
+    # Initialization sequences of price, reward and demand for each apt
+#        seq_price_all_apt=[]
+#        seq_reward_all_apt=[]
+#        seq_booked_all_apt=[]
+    
+    # Go through each apt
+    #for k in range(len(price_grid_test)):
+        price0 = price_grid_test[0,0]
+        booked0 = price_grid_test[0,1]
         
-        # Go through each apt
-        for k in range(len(price_grid_test)):
+        state_test = self.env_initial_test_state(price0, booked0,1)
+        
+        # Reward, price and demand trace for one apt (here the test is for 1 year, 2019 or 2020)
+        reward_trace_test = [] # Reward
+        p_test = [state_test[0,0]] # Price
+        booked_test = [state_test[0,1]] # Demand
+   
+        for t in range(len(price_grid_test)): # Compute price for the period (here 1 year)
+            # Select and perform an action
+            q_values_test = self.target_net(self.to_tensor(state_test))
+            action_test = self.policy.select_action_test(q_values_test.detach().numpy())
+        
+            next_state_test, reward_test, book = self.env_step_test(state_test, action_test)
             
-            state_test = self.env_initial_test_state(150, 0,1)
+            # Move to the next state
+            state_test = next_state_test
             
-            # Reward, price and demand trace for one apt (here the test is for 1 year, 2019 or 2020)
-            reward_trace_test = [] # Reward
-            p_test = [state_test[0,0]] # Price
-            booked_test = [state_test[1,0]] # Demand
-       
-            for t in range(len(price_grid_test[0])): # Compute price for the period (here 1 year)
-                # Select and perform an action
-                q_values_test = self.target_net(self.to_tensor(state_test))
-                action_test = self.policy.select_action_test(q_values_test.detach().numpy())
-            
-                next_state_test, reward_test, book = self.env_step(state_test, action_test)
-                
-                # Move to the next state
-                state_test = next_state_test
-                
-                # Store the trace of reward, price and demand for one apt
-                reward_trace_test.append(reward_test)
-                p_test.append(self.price_grid[action_test][0])
-                booked_test.append(book)
-            
-            # Store the trace of sequence of reward, price and demand for all apt
-            seq_price_all_apt.append(p_test)
-            seq_reward_all_apt.append(reward_trace_test)
-            seq_booked_all_apt.append(booked_test)
-            
-        return seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt
+            # Store the trace of reward, price and demand for one apt
+            reward_trace_test.append(reward_test)
+            p_test.append(self.price_grid[action_test][0])
+            booked_test.append(book)
+        
+        # Store the trace of sequence of reward, price and demand for all apt
+#            seq_price_all_apt.append(p_test)
+#            seq_reward_all_apt.append(reward_trace_test)
+#            seq_booked_all_apt.append(booked_test)
+        
+    #return seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt
+        return reward_trace_test, p_test, booked_test
     
     # Compute total reward of all apt, over the time
     def cumul_reward(self, seq_reward_all_apt, data_test, data_test_booked):
@@ -369,7 +391,7 @@ class DQN:
         plt.xlabel("Time step (month)");
         plt.ylabel("Price ($)");
         plt.plot(range(T), np.array(p_trace[0:-1:sampling_ratio]).T, c = 'k', alpha = 0.05)
-        return plt.plot(range(T), np.array(p_trace[-(last_highlights+1):-1]).T, c = 'red', alpha = 0.5, linewidth=2)
+        return plt.plot(range(T), np.array(p_trace[-(last_highlights+1):-1]).T, c = 'k', alpha = 0.5, linewidth=2)
     
     # Plot the result of training, return per episode & price per time steps per episode
     def plot_result(self, return_trace, p_trace):
@@ -380,55 +402,44 @@ class DQN:
 ###############################################################################
     ### Plot testing ###
     # Comparaison price generated vs price from data
-    def plot_price(self, seq_price_all_apt, data_test, year):
+    def plot_price(self, seq_price_all_apt, data_test):
         fig = plt.figure(figsize=(16, 10))
-        plt.title("Price generated from algo in " + year)
-        for price in seq_price_all_apt:
-            plt.plot(price)
+
+        plt.plot(seq_price_all_apt, label = "Price from algo", c='red', ls = "", marker='.')
+        plt.plot(data_test, label = "Price from data", c='blue', ls = "", marker='.')
         plt.xticks(rotation=45)
         plt.xlabel("Time")
         plt.ylabel("Price ($)")
         plt.grid()    
         
-        fig = plt.figure(figsize=(16, 10))
-        plt.title("Price from data in " + year)
-        for price in data_test:
-            plt.plot(price)
-        plt.xticks(rotation=45)
-        plt.xlabel("Time")
-        plt.ylabel("Price ($)")
-        plt.grid()
         
     # Comparaison reward generated vs reward from data
-    def plot_reward(self, cumul_reward_from_algo, cumul_reward_from_data, year):
-        labely = "Sum of reward of all apart in " + year + "from algo"
-        labely2 = "Sum of reward of all apart in " + year + "from data"
+    def plot_reward(self, cumul_reward_from_algo, cumul_reward_from_data):
+        labely = "Sum of reward of all apart in " +"from algo"
+        labely2 = "Sum of reward of all apart in "+"from data"
         fig = plt.figure(figsize=(16, 10))
-        plt.plot(cumul_reward_from_algo, label = labely, c='red')
-        plt.plot(cumul_reward_from_data, label = labely2, c='blue')
+        plt.plot(cumul_reward_from_algo, label = labely, c='red', ls = "", marker='.')
+        plt.plot(cumul_reward_from_data, label = labely2, c='blue', ls = "", marker='.')
         plt.legend()
         plt.grid()
 
     # Plot the result of test, 
-    def plot_result_test(self, data_test, data_test_booked, year):
+    def plot_result_test(self, price_grid_test):
         # Run the test and get the result
-        seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt = self.dqn_test(0.1*data_test, 0.1*data_test_booked)
-        cumul_reward_from_algo, cumul_reward_from_data = self.cumul_reward(seq_reward_all_apt, data_test, data_test_booked)
+        seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt = self.dqn_test(price_grid_test)
+        #cumul_reward_from_algo, cumul_reward_from_data = self.cumul_reward(seq_reward_all_apt, data_test, data_test_booked)
         
-        # Plot Price and reward
-        self.plot_price(seq_price_all_apt, data_test, year)
-        self.plot_reward(cumul_reward_from_algo, cumul_reward_from_data, year)
+        # Plot Price and reward                     #price col
+        self.plot_price(seq_price_all_apt, price_grid_test[:,0])
         
-        return seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt
-
-
-def test():
-    
-    dqn=DQN("airbnb_data.csv",0.95,0.001)
-    rt, pt=dqn.dqn_training(60)
+        reward_from_data=[]
+        for i in range(len(price_grid_test)):
+            p, b = price_grid_test[i,0], price_grid_test[i,1]
+            reward_from_data.append(self.profit_t_d_test(p,b))
         
-    
-
-#test()
+        
+        self.plot_reward(seq_reward_all_apt, reward_from_data)
+        
+        return seq_reward_all_apt, seq_price_all_apt, seq_booked_all_apt, reward_from_data
 
 

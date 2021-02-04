@@ -134,6 +134,73 @@ def create_data(nb_mois_test):
     
     df_glob_sales.to_csv("Data_Model.csv",index=False)
     
+def create_data_2(nb_mois_test):
+    df_start=ap.load_data("airbnb_data.csv")
+    df_start=df_start.loc[(df_start["room_type"]=="Entire home/apt") & (df_start["price"]>=100) & (df_start["price"]<=200)]
+    df_final=da.review_data(df_start,"new-york-city")
+    
+    nombre_de_mois_test = nb_mois_test
+
+    df_final=df_final.reset_index(drop=True)
+    df_final=df_final.loc[df_final.shape[0]-nombre_de_mois_test:df_final.shape[0]-1]
+    
+    df_glob_sales = pd.DataFrame(columns= ["Prix","Achat_Tot","Date","Part_Strat"])
+    
+     #parcours de prix 
+    for n in range (300):
+        
+        print(n, "% effectués")
+        
+        #parcours de proportion
+        for i in range(100):
+            
+            #on créé le marché
+            market=mkt.Market(100,200,30,1-(i/100),0.85,0.15,df_start,df_final)
+            
+            p_trace=[rd.randrange(100,200)]
+            
+            p = rd.randrange(100,200)
+            
+            #parcours de date
+            for k in range(df_final.shape[0]):   
+                
+                choice = rd.random()
+                
+                #prix random
+                if choice <0.25 :
+                    
+                    p = rd.randrange(100,200)
+        
+                if choice >= 0.25 and choice < 0.5 :
+                    
+                    up = rd.randrange(1,10)
+                    p = p + up
+                    
+                if choice >= 0.5 and choice < 0.75 :
+                    
+                    down = rd.randrange(1,10)
+                    p = p + down
+                
+                if choice >= 0.75 :
+        
+                    p = p
+                
+                
+                p_trace.append(p)
+                
+
+                
+                achat_naiv, achat_strat = market.updates(p,p_trace,k)
+                
+                
+                df_glob_sales = df_glob_sales.append({"Prix":p,"Achat_Tot":(achat_naiv+achat_strat),"Date":k+1,"Part_Strat":(i/100)},ignore_index=True)
+                    
+                    
+    print(df_glob_sales)
+    
+    df_glob_sales.to_csv("Data_Model_2.csv",index=False)
+
+    
 def load_data(path, train_proportion ,strat_min_prop, step_prop):
     df= pd.read_csv(path)
     df = df.loc[(df["Part_Strat"]>=strat_min_prop) & (df["Part_Strat"]<strat_min_prop+step_prop)]
@@ -182,7 +249,7 @@ def testing_data_2020(df_price, df_booked):
 #dt20 , dtb20 =testing_data_2020(df_p, df_b)
 
 
-# create_data(12)
+# create_data_2(12)
 
 # load_data("Data_Model.csv",0.83,0, 0.1)
     
