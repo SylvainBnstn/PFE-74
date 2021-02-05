@@ -18,13 +18,13 @@ https://docs.google.com/spreadsheets/d/1ZpePOLN7cyXvn-rRZXs5oedDq6WzBF2Q4LG4erQi
 
 
 
-# Objectif
+# Objectifs
 - Concevoir une stratégie de tarification dynamique (dynamic pricing) qui optimise le porfit pour un vendeur qui vend des produits pour certaines informations données sur le produit, l'état du marché et les clients
 - Modéliser le comportement des clients (naïf, stratégique)
 - Modéliser l'effet de l'intéraction client-vendeur sur les prix
 - Utiliser le DQN pour ajuster automatiquement les prix afin de maximiser le profit
 
-# Problèmmatique
+# Problèmatique
 Quelle stratégie de dynamic pricing à adopter dans un marché en présence de clients stratégiques avec un produit ayant une maturité fixée (finie ou infinie) ?
 
 # Choix du produit
@@ -36,7 +36,7 @@ L'étude a été fait sur les logements d'Airbnb sur les "Entire home/apt" entre
 ## Télécharger ou mettre à jour les données
 Les données brutes sont stockées dans `Code/airbnb.csv`. S'il n'y est pas sur github, c'est parce que le fichier est très lourd (+300Mo). 
 
-Télécharger les données en décommentant les trois dernières lignes de `Code/airbnb_processing.py`. Par défaut, seulement les données de "new-york-city" sont téléchargées. Pour télécharger les données d'une autre, remplacer le nom de la ville dans la fonction `get_data(URLS,"airbnb_data.csv",["new-york-city"])` dans `Code/airbnb_processing.py`
+Télécharger les données en décommentant les trois dernières lignes de `Code/airbnb_processing.py`. Par défaut, seulement les données de "new-york-city" sont téléchargées. Pour télécharger les données d'une autre ville, remplacer le nom de la ville dans la fonction `get_data(URLS,"airbnb_data.csv",["new-york-city"])` dans `Code/airbnb_processing.py`
 
 Pour mettre à jour de nouveaux jeux de données, copier l'URLs depuis http://insideairbnb.com/get-the-data.html, puis coller dans `Code/urls.txt`
 
